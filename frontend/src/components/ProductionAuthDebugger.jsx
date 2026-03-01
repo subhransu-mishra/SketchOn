@@ -7,6 +7,36 @@ const ProductionAuthDebugger = () => {
   const [debugInfo, setDebugInfo] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const getRecommendedAction = (response, configData, responseData) => {
+    if (!response) return "API server appears to be down or unreachable";
+
+    if (configData && configData.error) {
+      return "Backend configuration endpoint failed - check server logs";
+    }
+
+    if (responseData && responseData.isHTML) {
+      return "API returning HTML instead of JSON - likely server misconfiguration or routing issue";
+    }
+
+    if (response.status === 401) {
+      return "Authentication failed - check CLERK_SECRET_KEY in production environment";
+    }
+
+    if (response.status === 404) {
+      return "API endpoint not found - check API_BASE_URL configuration";
+    }
+
+    if (response.status >= 500) {
+      return "Server error - check backend logs and database connection";
+    }
+
+    if (!responseData || responseData.parseError) {
+      return "Response parsing failed - server may be returning malformed JSON";
+    }
+
+    return "Check console logs for detailed error information";
+  };
+
   const testProductionAuth = async () => {
     setLoading(true);
     setDebugInfo(null);
@@ -15,11 +45,28 @@ const ProductionAuthDebugger = () => {
       console.log("=== PRODUCTION AUTH DEBUG ===");
 
       // First, check backend config
-      const configUrl =
-        "https://whiteboard-ai-a5pt.onrender.com/api/debug/config";
-      const configResponse = await fetch(configUrl);
-      const configData = await configResponse.json();
-      console.log("Backend config:", configData);
+      let configData = null;
+      try {
+        const configUrl =
+          "https://whiteboard-ai-a5pt.onrender.com/api/debug/config";
+        const configResponse = await fetch(configUrl);
+        const contentType = configResponse.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          configData = await configResponse.json();
+        } else {
+          const text = await configResponse.text();
+          configData = {
+            error: "Non-JSON response",
+            contentType,
+            isHTML: text.includes("<!DOCTYPE"),
+            preview: text.substring(0, 200),
+          };
+        }
+        console.log("Backend config:", configData);
+      } catch (configError) {
+        console.error("Config fetch failed:", configError);
+        configData = { error: configError.message };
+      }
 
       // Get token
       const token = await getToken();
@@ -45,12 +92,26 @@ const ProductionAuthDebugger = () => {
       console.log("Response status:", response.status);
       console.log("Response headers:", Object.fromEntries(response.headers));
 
+      const contentType = response.headers.get("content-type");
       const text = await response.text();
       let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = text;
+
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          data = {
+            parseError: parseError.message,
+            rawText: text.substring(0, 500),
+          };
+        }
+      } else {
+        data = {
+          error: "Non-JSON response",
+          contentType,
+          isHTML: text.includes("<!DOCTYPE"),
+          preview: text.substring(0, 500),
+        };
       }
 
       setDebugInfo({
@@ -75,7 +136,16 @@ const ProductionAuthDebugger = () => {
           status: response.status,
           statusText: response.statusText,
           ok: response.ok,
+          contentType: response.headers.get("content-type"),
           data: data,
+        },
+        diagnosis: {
+          apiReachable: !!response,
+          authConfigured: configData && !configData.error,
+          responseIsJSON:
+            contentType && contentType.includes("application/json"),
+          responseIsHTML: typeof data === "object" && data.isHTML,
+          recommendedAction: getRecommendedAction(response, configData, data),
         },
         environment: {
           hostname: window.location.hostname,

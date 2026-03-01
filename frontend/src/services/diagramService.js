@@ -12,9 +12,73 @@ class DiagramService {
     this.getAuthToken = null;
   }
 
-  // Set the auth token getter function
-  setAuthProvider(getAuthToken) {
-    this.getAuthToken = getAuthToken;
+  // Helper method to safely parse response
+  async parseResponse(response, context = "API call") {
+    try {
+      // Log response details for debugging
+      console.log(`${context} response:`, {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers),
+        url: response.url,
+      });
+
+      // Check if response is ok
+      if (!response.ok) {
+        // Try to get error details, but handle non-JSON responses
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // Response is not JSON, get text content
+          const textContent = await response.text();
+          console.error(
+            "Non-JSON error response:",
+            textContent.substring(0, 500),
+          );
+
+          if (textContent.includes("<!DOCTYPE")) {
+            errorMessage = `Server returned HTML error page instead of JSON. This usually means the API endpoint is not available or there's a server configuration issue.`;
+          } else {
+            errorMessage = `Server error: ${errorMessage}. Response: ${textContent.substring(0, 200)}`;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Check content type
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.warn("Response is not JSON:", contentType);
+        const textContent = await response.text();
+        console.log("Text response:", textContent.substring(0, 500));
+
+        if (textContent.includes("<!DOCTYPE")) {
+          throw new Error(
+            "Server returned HTML page instead of JSON API response. Check if the API server is running correctly.",
+          );
+        }
+
+        // Try to parse as JSON anyway
+        try {
+          return JSON.parse(textContent);
+        } catch {
+          throw new Error(
+            `Expected JSON response but got: ${contentType}. Content: ${textContent.substring(0, 200)}`,
+          );
+        }
+      }
+
+      // Parse JSON response
+      const data = await response.json();
+      console.log(`${context} success:`, data);
+      return data;
+    } catch (error) {
+      console.error(`Error parsing ${context} response:`, error);
+      throw error;
+    }
   }
 
   // Get all diagrams for the authenticated user
@@ -34,6 +98,7 @@ class DiagramService {
       console.log("Auth token exists:", !!token);
       console.log("Auth token length:", token ? token.length : 0);
       console.log("Environment:", window.location.hostname);
+
       const response = await fetch(`${API_BASE_URL}/diagrams`, {
         method: "GET",
         headers: {
@@ -42,21 +107,8 @@ class DiagramService {
         },
       });
 
-      if (response.status === 401) {
-        console.error("401 Unauthorized - Auth details:", {
-          hasToken: !!token,
-          tokenLength: token ? token.length : 0,
-          apiUrl: `${API_BASE_URL}/diagrams`,
-          responseStatus: response.status,
-        });
-        throw new Error("Unauthorized - Invalid or missing authentication");
-      }
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch diagrams");
-      }
-
+      // Use the safe response parser
+      const data = await this.parseResponse(response, "getAllDiagrams");
       return data;
     } catch (error) {
       console.error("Error fetching diagrams:", error);
@@ -80,11 +132,7 @@ class DiagramService {
         },
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch diagram");
-      }
-
+      const data = await this.parseResponse(response, "getDiagram");
       return data;
     } catch (error) {
       console.error("Error fetching diagram:", error);
@@ -109,11 +157,7 @@ class DiagramService {
         body: JSON.stringify(diagramData),
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to create diagram");
-      }
-
+      const data = await this.parseResponse(response, "createDiagram");
       return data;
     } catch (error) {
       console.error("Error creating diagram:", error);
@@ -174,22 +218,7 @@ class DiagramService {
       });
 
       console.log(`Response status: ${response.status}`);
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error("Failed to parse response JSON:", parseError);
-        throw new Error(
-          `Server returned ${response.status} but response is not valid JSON`,
-        );
-      }
-
-      if (!response.ok) {
-        console.error("Server error response:", data);
-        throw new Error(data.message || `Server error: ${response.status}`);
-      }
-
+      const data = await this.parseResponse(response, "saveDiagram");
       return data;
     } catch (error) {
       console.error("Error saving diagram:", error);
@@ -213,15 +242,48 @@ class DiagramService {
         },
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to delete diagram");
-      }
-
+      const data = await this.parseResponse(response, "deleteDiagram");
       return data;
     } catch (error) {
       console.error("Error deleting diagram:", error);
       throw error;
+    }
+  }
+
+  // Test API connectivity and configuration
+  async testConnection() {
+    try {
+      console.log("Testing API connection to:", API_BASE_URL);
+
+      // Test health endpoint (no auth required)
+      const healthUrl = API_BASE_URL.replace("/api", "/health");
+      const healthResponse = await fetch(healthUrl);
+      const healthData = await this.parseResponse(
+        healthResponse,
+        "health check",
+      );
+
+      // Test debug config endpoint (no auth required)
+      const configUrl = `${API_BASE_URL}/debug/config`;
+      const configResponse = await fetch(configUrl);
+      const configData = await this.parseResponse(
+        configResponse,
+        "config check",
+      );
+
+      return {
+        health: healthData,
+        config: configData,
+        apiUrl: API_BASE_URL,
+        connectionStatus: "success",
+      };
+    } catch (error) {
+      console.error("Connection test failed:", error);
+      return {
+        connectionStatus: "failed",
+        error: error.message,
+        apiUrl: API_BASE_URL,
+      };
     }
   }
 }
