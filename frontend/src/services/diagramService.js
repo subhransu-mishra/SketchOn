@@ -299,12 +299,13 @@ const diagramService = new DiagramService();
 // Hook to initialize the service with auth
 export const useDiagramService = () => {
   const { getToken, isSignedIn, user } = useAuth();
+  const [isReady, setIsReady] = React.useState(false);
 
-  // Always update the auth provider when auth state changes
+  // Set up auth provider - runs on every render to ensure it's always current
   React.useEffect(() => {
     if (isSignedIn && user) {
       console.log("Setting up auth provider for user:", user.id);
-      diagramService.setAuthProvider(async () => {
+      const authProvider = async () => {
         try {
           const token = await getToken();
           if (!token) {
@@ -316,14 +317,23 @@ export const useDiagramService = () => {
           console.error("Error getting auth token:", error);
           throw error;
         }
-      });
+      };
+      diagramService.setAuthProvider(authProvider);
+      setIsReady(true);
     } else {
       console.log("User not signed in, clearing auth provider");
       diagramService.setAuthProvider(null);
+      setIsReady(false);
     }
   }, [isSignedIn, user, getToken]);
 
-  return diagramService;
+  // Return both the service and ready state
+  return {
+    diagramService,
+    isReady: isReady && isSignedIn && !!user,
+    isSignedIn,
+    user,
+  };
 };
 
 export default diagramService;

@@ -12,7 +12,7 @@ import { loadingManager } from "../../services/apiUtils";
 
 const CanvasPage = () => {
   const { isSignedIn, user } = useUser();
-  const diagramService = useDiagramService();
+  const { diagramService, isReady } = useDiagramService();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -31,7 +31,7 @@ const CanvasPage = () => {
   const projectId = searchParams.get("project");
 
   useEffect(() => {
-    if (isSignedIn && user) {
+    if (isSignedIn && user && isReady) {
       if (isNewProject) {
         setShowTitleModal(true);
       } else if (projectId) {
@@ -41,7 +41,7 @@ const CanvasPage = () => {
         navigate("/dashboard");
       }
     }
-  }, [isSignedIn, user, isNewProject, projectId, navigate]);
+  }, [isSignedIn, user, isReady, isNewProject, projectId, navigate]);
 
   const loadExistingProject = async (id) => {
     try {

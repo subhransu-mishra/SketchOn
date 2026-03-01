@@ -15,7 +15,7 @@ import { loadingManager } from "../services/apiUtils";
 const Dashboard = () => {
   const { isSignedIn, user } = useUser();
   const navigate = useNavigate();
-  const diagramService = useDiagramService();
+  const { diagramService, isReady } = useDiagramService();
   const [projects, setProjects] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,13 +34,16 @@ const Dashboard = () => {
         return;
       }
 
+      // Wait for auth service to be ready
+      if (!isReady) {
+        console.log("Auth service not ready yet, waiting...");
+        return;
+      }
+
       try {
         setIsLoading(true);
         setError(null);
         loadingManager.startLoading("dashboard-projects");
-
-        // Add a small delay to ensure auth is fully initialized
-        await new Promise((resolve) => setTimeout(resolve, 100));
 
         console.log("Loading diagrams for user:", user.id);
         const response = await diagramService.getAllDiagrams();
@@ -81,7 +84,7 @@ const Dashboard = () => {
     };
 
     loadProjects();
-  }, [isSignedIn, user, diagramService, navigate]);
+  }, [isSignedIn, user, isReady, diagramService, navigate]);
 
   const handleNewProject = () => {
     navigate("/canvas?new=true");
