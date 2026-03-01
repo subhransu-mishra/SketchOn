@@ -39,6 +39,10 @@ const Dashboard = () => {
         setError(null);
         loadingManager.startLoading("dashboard-projects");
 
+        // Add a small delay to ensure auth is fully initialized
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        console.log("Loading diagrams for user:", user.id);
         const response = await diagramService.getAllDiagrams();
         const diagrams = response.data || [];
 

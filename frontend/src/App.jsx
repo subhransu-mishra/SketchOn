@@ -4,6 +4,7 @@ import Pricing from "./pages/Pricing";
 import HowToUse from "./pages/HowToUse";
 import Dashboard from "./pages/Dashboard";
 import CanvasPage from "./pages//SketchPage/CanvasPage";
+import AuthDebugger from "./components/AuthDebugger";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/canvas" element={<CanvasPage />} />
       </Routes>
+      <AuthDebugger />
     </BrowserRouter>
   );
 }

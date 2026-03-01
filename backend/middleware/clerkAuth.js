@@ -2,6 +2,14 @@ const { ClerkExpressWithAuth } = require("@clerk/clerk-sdk-node");
 
 // Production-ready authentication middleware
 const validateClerkUser = (req, res, next) => {
+  console.log("Auth middleware called:", {
+    method: req.method,
+    url: req.url,
+    hasAuth: !!req.headers.authorization,
+    nodeEnv: process.env.NODE_ENV,
+    hasClerkKey: !!process.env.CLERK_SECRET_KEY,
+  });
+
   // Check if we have a secret key configured
   if (
     !process.env.CLERK_SECRET_KEY ||
@@ -14,11 +22,12 @@ const validateClerkUser = (req, res, next) => {
     });
   }
 
-  // Development bypass (only for non-production environments)
+  // Development bypass (only for localhost and test keys)
   if (
     process.env.NODE_ENV !== "production" &&
-    (!process.env.CLERK_SECRET_KEY ||
-      process.env.CLERK_SECRET_KEY.startsWith("sk_test_"))
+    process.env.CLERK_SECRET_KEY.startsWith("sk_test_") &&
+    (req.get("host") === "localhost:4000" ||
+      req.get("host") === "127.0.0.1:4000")
   ) {
     console.log("Using development auth bypass");
     req.auth = { userId: "dev-user-123" };
@@ -33,12 +42,24 @@ const validateClerkUser = (req, res, next) => {
 
   clerkAuth(req, res, (err) => {
     if (err) {
-      console.error("Clerk auth error:", err);
+      console.error("Clerk auth error:", {
+        error: err.message,
+        stack: err.stack,
+        authHeader: req.headers.authorization ? "Present" : "Missing",
+        secretKeyPrefix: process.env.CLERK_SECRET_KEY
+          ? process.env.CLERK_SECRET_KEY.substring(0, 7)
+          : "None",
+      });
       return res.status(401).json({
         success: false,
         message: "Authentication failed",
+        error:
+          process.env.NODE_ENV === "development"
+            ? err.message
+            : "Invalid token",
       });
     }
+    console.log("Clerk auth successful, user ID:", req.auth?.userId);
     addUserToRequest(req, res, next);
   });
 };

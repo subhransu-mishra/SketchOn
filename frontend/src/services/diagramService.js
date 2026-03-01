@@ -1,4 +1,5 @@
 import { useAuth } from "@clerk/clerk-react";
+import React from "react";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -19,11 +20,18 @@ class DiagramService {
   // Get all diagrams for the authenticated user
   async getAllDiagrams() {
     try {
+      if (!this.getAuthToken) {
+        throw new Error("Authentication not initialized. Please sign in.");
+      }
+
       const token = await this.getAuthToken();
 
       if (!token) {
         throw new Error("No authentication token available");
       }
+
+      console.log("Making request to:", `${API_BASE_URL}/diagrams`);
+      console.log("Auth token exists:", !!token);
 
       const response = await fetch(`${API_BASE_URL}/diagrams`, {
         method: "GET",
@@ -52,6 +60,10 @@ class DiagramService {
   // Get a single diagram by ID
   async getDiagram(diagramId) {
     try {
+      if (!this.getAuthToken) {
+        throw new Error("Authentication not initialized. Please sign in.");
+      }
+
       const token = await this.getAuthToken();
       const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}`, {
         method: "GET",
@@ -76,6 +88,10 @@ class DiagramService {
   // Create a new diagram
   async createDiagram(diagramData) {
     try {
+      if (!this.getAuthToken) {
+        throw new Error("Authentication not initialized. Please sign in.");
+      }
+
       const token = await this.getAuthToken();
       const response = await fetch(`${API_BASE_URL}/diagrams`, {
         method: "POST",
@@ -101,6 +117,10 @@ class DiagramService {
   // Update/Save a diagram
   async saveDiagram(diagramId, updateData) {
     try {
+      if (!this.getAuthToken) {
+        throw new Error("Authentication not initialized. Please sign in.");
+      }
+
       const token = await this.getAuthToken();
 
       if (!token) {
@@ -173,6 +193,10 @@ class DiagramService {
   // Delete a diagram
   async deleteDiagram(diagramId) {
     try {
+      if (!this.getAuthToken) {
+        throw new Error("Authentication not initialized. Please sign in.");
+      }
+
       const token = await this.getAuthToken();
       const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}`, {
         method: "DELETE",
@@ -200,23 +224,30 @@ const diagramService = new DiagramService();
 
 // Hook to initialize the service with auth
 export const useDiagramService = () => {
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, user } = useAuth();
 
-  // Initialize the service with the auth token getter
-  if (!diagramService.getAuthToken && isSignedIn) {
-    diagramService.setAuthProvider(async () => {
-      try {
-        const token = await getToken();
-        if (!token) {
-          throw new Error("Failed to retrieve authentication token");
+  // Always update the auth provider when auth state changes
+  React.useEffect(() => {
+    if (isSignedIn && user) {
+      console.log("Setting up auth provider for user:", user.id);
+      diagramService.setAuthProvider(async () => {
+        try {
+          const token = await getToken();
+          if (!token) {
+            throw new Error("Failed to retrieve authentication token");
+          }
+          console.log("Auth token retrieved successfully");
+          return token;
+        } catch (error) {
+          console.error("Error getting auth token:", error);
+          throw error;
         }
-        return token;
-      } catch (error) {
-        console.error("Error getting auth token:", error);
-        throw error;
-      }
-    });
-  }
+      });
+    } else {
+      console.log("User not signed in, clearing auth provider");
+      diagramService.setAuthProvider(null);
+    }
+  }, [isSignedIn, user, getToken]);
 
   return diagramService;
 };

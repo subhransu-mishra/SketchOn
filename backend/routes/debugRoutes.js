@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { validateClerkUser } = require("../middleware/clerkAuth");
 
 // Debug endpoint to inspect request data
 router.post("/debug-data", (req, res) => {
@@ -40,6 +41,27 @@ router.post("/debug-data", (req, res) => {
         isArray: Array.isArray(req.body.edges),
         length: req.body.edges ? req.body.edges.length : 0,
       },
+    },
+  });
+});
+
+// Auth test endpoint
+router.post("/auth-test", validateClerkUser, (req, res) => {
+  console.log("=== AUTH TEST ENDPOINT ===");
+  console.log("Auth header:", req.headers.authorization);
+  console.log("User ID:", req.clerkUserId);
+  console.log("Request auth:", req.auth);
+
+  res.json({
+    success: true,
+    message: "Authentication successful",
+    user: {
+      id: req.clerkUserId,
+      authObject: req.auth,
+    },
+    server: {
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString(),
     },
   });
 });
