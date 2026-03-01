@@ -1,7 +1,5 @@
 const { ClerkExpressWithAuth } = require("@clerk/clerk-sdk-node");
 
-
-
 // Production-ready authentication middleware
 const validateClerkUser = (req, res, next) => {
   // Check if we have a secret key configured
@@ -19,7 +17,8 @@ const validateClerkUser = (req, res, next) => {
   // Development bypass (only for non-production environments)
   if (
     process.env.NODE_ENV !== "production" &&
-    process.env.CLERK_SECRET_KEY.startsWith("sk_test_")
+    (!process.env.CLERK_SECRET_KEY ||
+      process.env.CLERK_SECRET_KEY.startsWith("sk_test_"))
   ) {
     console.log("Using development auth bypass");
     req.auth = { userId: "dev-user-123" };

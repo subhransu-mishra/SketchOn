@@ -114,12 +114,12 @@ const CanvasPage = () => {
   const handleSaveProjectTitle = async (projectTitle) => {
     try {
       setIsLoading(true);
-      loadingManager.startLoading('create-project');
+      loadingManager.startLoading("create-project");
 
       const response = await diagramService.createDiagram({
         title: projectTitle,
         nodes: [],
-        edges: []
+        edges: [],
       });
 
       const diagram = response.data;
@@ -130,15 +130,15 @@ const CanvasPage = () => {
         lastModified: diagram.updatedAt || diagram.createdAt,
         data: {
           nodes: diagram.nodes || [],
-          edges: diagram.edges || []
-        }
+          edges: diagram.edges || [],
+        },
       };
 
       setCurrentProject(newProject);
       isUpdatingFromParent.current = true;
       setProjectData(newProject.data);
       setShowTitleModal(false);
-      setSaveStatus('saved');
+      setSaveStatus("saved");
 
       // Reset the flag after a short delay
       setTimeout(() => {
@@ -149,42 +149,105 @@ const CanvasPage = () => {
       const newUrl = `/canvas?project=${newProject.id}`;
       window.history.replaceState({}, "", newUrl);
     } catch (error) {
-      console.error('Error creating project:', error);
-      setError('Failed to create project: ' + (error.message || 'Unknown error'));
+      console.error("Error creating project:", error);
+      setError(
+        "Failed to create project: " + (error.message || "Unknown error"),
+      );
     } finally {
       setIsLoading(false);
-      loadingManager.stopLoading('create-project');
+      loadingManager.stopLoading("create-project");
     }
   };
 
   // Auto-save with debouncing
   const autoSaveTimeout = useRef(null);
-  
+
   const saveProjectData = async (projectData) => {
-    if (!currentProject) return;
-    
+    if (!currentProject || !currentProject.id) {
+      console.warn("No current project to save");
+      return;
+    }
+
     try {
-      setSaveStatus('saving');
-      await diagramService.saveDiagram(currentProject.id, {
-        nodes: projectData.nodes,
-        edges: projectData.edges
+      setSaveStatus("saving");
+
+      // Validate that we have proper data structure
+      if (!projectData || (!projectData.nodes && !projectData.edges)) {
+        console.warn("No valid project data to save");
+        setSaveStatus("unsaved");
+        return;
+      }
+
+      // Deep sanitize the data to ensure proper structure
+      const sanitizeNodeOrEdge = (item) => {
+        if (typeof item === "string") {
+          try {
+            return JSON.parse(item);
+          } catch (e) {
+            console.warn("Failed to parse item:", item);
+            return null;
+          }
+        }
+        return item;
+      };
+
+      const saveData = {
+        nodes: Array.isArray(projectData.nodes)
+          ? projectData.nodes.map(sanitizeNodeOrEdge).filter(Boolean)
+          : [],
+        edges: Array.isArray(projectData.edges)
+          ? projectData.edges.map(sanitizeNodeOrEdge).filter(Boolean)
+          : [],
+      };
+
+      console.log("Saving project data:", {
+        id: currentProject.id,
+        nodesCount: saveData.nodes.length,
+        edgesCount: saveData.edges.length,
+        sampleNode: saveData.nodes[0] || null,
+        sampleEdge: saveData.edges[0] || null,
       });
-      setSaveStatus('saved');
+
+      await diagramService.saveDiagram(currentProject.id, saveData);
+      setSaveStatus("saved");
+      console.log("Project saved successfully");
     } catch (error) {
-      console.error('Auto-save error:', error);
-      setSaveStatus('unsaved');
+      console.error("Auto-save error:", error);
+      setSaveStatus("unsaved");
+
+      // Show user-friendly error message for certain error types
+      if (
+        error.message.includes("authentication") ||
+        error.message.includes("401")
+      ) {
+        console.error("Authentication error - user may need to sign in again");
+      } else if (
+        error.message.includes("network") ||
+        error.message.includes("fetch")
+      ) {
+        console.error("Network error - check internet connection");
+      }
     }
   };
 
   // Manual save function for save button
   const handleManualSave = async () => {
-    if (!currentProject) return;
-    
+    if (!currentProject) {
+      console.warn("No current project to save manually");
+      return;
+    }
+
     if (autoSaveTimeout.current) {
       clearTimeout(autoSaveTimeout.current);
     }
-    
-    await saveProjectData(projectData);
+
+    try {
+      await saveProjectData(projectData);
+      console.log("Manual save completed");
+    } catch (error) {
+      console.error("Error saving diagram:", error);
+      // You might want to show a toast notification or alert here
+    }
   };
 
   const handleProjectDataChange = useCallback(
@@ -196,23 +259,23 @@ const CanvasPage = () => {
 
       const updatedData = { nodes, edges };
       setProjectData(updatedData);
-      setSaveStatus('unsaved');
+      setSaveStatus("unsaved");
 
       // Debounced auto-save to API
       if (currentProject && user) {
         if (autoSaveTimeout.current) {
           clearTimeout(autoSaveTimeout.current);
         }
-        
+
         autoSaveTimeout.current = setTimeout(() => {
           saveProjectData(updatedData);
         }, 2000); // Auto-save after 2 seconds of inactivity
-        
+
         // Update the current project state immediately for UI
-        setCurrentProject(prev => ({
+        setCurrentProject((prev) => ({
           ...prev,
           data: updatedData,
-          lastModified: new Date().toISOString()
+          lastModified: new Date().toISOString(),
         }));
       }
     },
@@ -233,8 +296,8 @@ const CanvasPage = () => {
   return (
     <>
       <div className="h-screen bg-neutral-950 text-white flex">
-        <Sidebar 
-          currentProject={currentProject} 
+        <Sidebar
+          currentProject={currentProject}
           saveStatus={saveStatus}
           onManualSave={handleManualSave}
         />
@@ -324,8 +387,10 @@ const CanvasPage = () => {
                 disabled={!title.trim() || isLoading}
                 className="px-6 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
-                {isLoading && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>}
-                {isLoading ? 'Creating...' : 'Create Project'}
+                {isLoading && (
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                )}
+                {isLoading ? "Creating..." : "Create Project"}
               </button>
             </div>
           </div>

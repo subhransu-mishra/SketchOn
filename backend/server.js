@@ -45,6 +45,9 @@ app.use((req, res, next) => {
   console.log(
     `${req.method} ${req.url}`,
     req.headers.authorization ? "with auth" : "no auth",
+    req.body
+      ? `Body: ${JSON.stringify(req.body)}`.substring(0, 200)
+      : "no body",
   );
   next();
 });
@@ -83,3 +86,8 @@ app.get("/health", (req, res) => {
   });
 });
 app.use("/api/diagrams", require("./routes/diagramRoutes.js"));
+
+// Debug routes in development
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api/debug", require("./routes/debugRoutes.js"));
+}
