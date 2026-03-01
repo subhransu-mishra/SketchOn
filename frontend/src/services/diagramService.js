@@ -12,6 +12,11 @@ class DiagramService {
     this.getAuthToken = null;
   }
 
+  // Set the auth token getter function
+  setAuthProvider(getAuthToken) {
+    this.getAuthToken = getAuthToken;
+  }
+
   // Helper method to safely parse response
   async parseResponse(response, context = "API call") {
     try {
