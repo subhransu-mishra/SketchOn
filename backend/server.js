@@ -83,6 +83,18 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     database:
       mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    environment: process.env.NODE_ENV || "development",
+    auth: {
+      clerkConfigured:
+        !!process.env.CLERK_SECRET_KEY &&
+        process.env.CLERK_SECRET_KEY !==
+          "sk_live_YOUR_PRODUCTION_SECRET_KEY_HERE",
+      secretKeyType: process.env.CLERK_SECRET_KEY?.startsWith("sk_live_")
+        ? "production"
+        : process.env.CLERK_SECRET_KEY?.startsWith("sk_test_")
+          ? "development"
+          : "invalid",
+    },
   });
 });
 app.use("/api/diagrams", require("./routes/diagramRoutes.js"));

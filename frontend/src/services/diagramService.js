@@ -32,7 +32,8 @@ class DiagramService {
 
       console.log("Making request to:", `${API_BASE_URL}/diagrams`);
       console.log("Auth token exists:", !!token);
-
+      console.log("Auth token length:", token ? token.length : 0);
+      console.log("Environment:", window.location.hostname);
       const response = await fetch(`${API_BASE_URL}/diagrams`, {
         method: "GET",
         headers: {
@@ -42,6 +43,12 @@ class DiagramService {
       });
 
       if (response.status === 401) {
+        console.error("401 Unauthorized - Auth details:", {
+          hasToken: !!token,
+          tokenLength: token ? token.length : 0,
+          apiUrl: `${API_BASE_URL}/diagrams`,
+          responseStatus: response.status,
+        });
         throw new Error("Unauthorized - Invalid or missing authentication");
       }
 

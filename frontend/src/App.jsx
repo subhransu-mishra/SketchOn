@@ -5,6 +5,7 @@ import HowToUse from "./pages/HowToUse";
 import Dashboard from "./pages/Dashboard";
 import CanvasPage from "./pages//SketchPage/CanvasPage";
 import AuthDebugger from "./components/AuthDebugger";
+import ProductionAuthDebugger from "./components/ProductionAuthDebugger";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/canvas" element={<CanvasPage />} />
       </Routes>
       <AuthDebugger />
+      {window.location.hostname !== "localhost" && <ProductionAuthDebugger />}
     </BrowserRouter>
   );
 }
