@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import React from "react";
 
 const API_BASE_URL =
@@ -298,11 +298,18 @@ const diagramService = new DiagramService();
 
 // Hook to initialize the service with auth
 export const useDiagramService = () => {
-  const { getToken, isSignedIn, user } = useAuth();
+  const { getToken, isSignedIn, isLoaded } = useAuth();
+  const { user } = useUser();
   const [isReady, setIsReady] = React.useState(false);
 
-  // Set up auth provider - runs on every render to ensure it's always current
+  // Set up auth provider - only after Clerk has fully loaded
   React.useEffect(() => {
+    // Wait for Clerk to finish loading before making any decisions
+    if (!isLoaded) {
+      console.log("Clerk still loading, waiting...");
+      return;
+    }
+
     if (isSignedIn && user) {
       console.log("Setting up auth provider for user:", user.id);
       const authProvider = async () => {
@@ -321,17 +328,18 @@ export const useDiagramService = () => {
       diagramService.setAuthProvider(authProvider);
       setIsReady(true);
     } else {
-      console.log("User not signed in, clearing auth provider");
+      console.log("User not signed in after Clerk loaded");
       diagramService.setAuthProvider(null);
       setIsReady(false);
     }
-  }, [isSignedIn, user, getToken]);
+  }, [isLoaded, isSignedIn, user, getToken]);
 
   // Return both the service and ready state
   return {
     diagramService,
-    isReady: isReady && isSignedIn && !!user,
+    isReady: isLoaded && isReady && isSignedIn && !!user,
     isSignedIn,
+    isLoaded,
     user,
   };
 };

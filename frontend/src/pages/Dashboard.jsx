@@ -15,7 +15,7 @@ import { loadingManager } from "../services/apiUtils";
 const Dashboard = () => {
   const { isSignedIn, user } = useUser();
   const navigate = useNavigate();
-  const { diagramService, isReady } = useDiagramService();
+  const { diagramService, isReady, isLoaded } = useDiagramService();
   const [projects, setProjects] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +24,15 @@ const Dashboard = () => {
   // Load projects from API on component mount
   useEffect(() => {
     const loadProjects = async () => {
+      // Wait for Clerk to finish loading
+      if (!isLoaded) {
+        console.log("Clerk still loading...");
+        return;
+      }
+
       if (!isSignedIn) {
-        console.log("User not signed in, redirecting...");
+        console.log("User not signed in, redirecting to home...");
+        navigate("/");
         return;
       }
 
@@ -84,7 +91,7 @@ const Dashboard = () => {
     };
 
     loadProjects();
-  }, [isSignedIn, user, isReady, diagramService, navigate]);
+  }, [isLoaded, isSignedIn, user, isReady, diagramService, navigate]);
 
   const handleNewProject = () => {
     navigate("/canvas?new=true");
