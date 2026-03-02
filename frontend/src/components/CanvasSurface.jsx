@@ -12,12 +12,14 @@ import RectangleNode from "./nodes/RectangleNode";
 import CircleNode from "./nodes/CircleNode";
 import DiamondNode from "./nodes/DiamondNode";
 import TextNode from "./nodes/TextNode";
+import IconNode from "./nodes/IconNode";
 
 const nodeTypes = {
   rectangle: RectangleNode,
   circle: CircleNode,
   diamond: DiamondNode,
   textNode: TextNode,
+  iconNode: IconNode,
 };
 
 let id = 0;
@@ -92,6 +94,7 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
 
       const reactFlowBounds = event.currentTarget.getBoundingClientRect();
       const type = event.dataTransfer.getData("application/reactflow");
+      const iconDataStr = event.dataTransfer.getData("application/icon-data");
 
       if (typeof type === "undefined" || !type) {
         return;
@@ -102,12 +105,37 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
         y: event.clientY - reactFlowBounds.top,
       };
 
-      const newNode = {
-        id: getId(),
-        type,
-        position,
-        data: { label: `${type} node`, onLabelChange: onNodeLabelChange },
-      };
+      let newNode;
+
+      if (type === "iconNode" && iconDataStr) {
+        // Handle icon node with icon data
+        try {
+          const iconData = JSON.parse(iconDataStr);
+          newNode = {
+            id: getId(),
+            type: "iconNode",
+            position,
+            data: {
+              label: iconData.name,
+              name: iconData.name,
+              icon: iconData.icon,
+              iconId: iconData.id,
+              onLabelChange: onNodeLabelChange,
+            },
+          };
+        } catch (e) {
+          console.error("Error parsing icon data:", e);
+          return;
+        }
+      } else {
+        // Handle regular nodes
+        newNode = {
+          id: getId(),
+          type,
+          position,
+          data: { label: `${type} node`, onLabelChange: onNodeLabelChange },
+        };
+      }
 
       setNodes((nds) => nds.concat(newNode));
     },

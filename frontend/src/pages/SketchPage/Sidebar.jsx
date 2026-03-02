@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   IoHomeOutline as HomeIcon,
@@ -7,9 +7,14 @@ import {
   IoSaveOutline as SaveIcon,
   IoCheckmarkCircle as CheckIcon,
   IoWarningOutline as WarningIcon,
+  IoSearchOutline as SearchIcon,
+  IoCloseOutline as CloseIcon,
 } from "react-icons/io5";
+import { ICONS, searchIcons } from "../../data/icons";
 
 const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
+  const [iconSearchQuery, setIconSearchQuery] = useState("");
+
   const symbols = [
     { id: "rectangle", type: "rectangle", label: "Rectangle", icon: "⬜" },
     { id: "circle", type: "circle", label: "Circle", icon: "⚪" },
@@ -17,8 +22,19 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
     { id: "textNode", type: "textNode", label: "Text Box", icon: "📝" },
   ];
 
-  const onDragStart = (event, nodeType) => {
+  // Filter icons based on search query
+  const filteredIcons = useMemo(() => {
+    return searchIcons(iconSearchQuery);
+  }, [iconSearchQuery]);
+
+  const onDragStart = (event, nodeType, iconData = null) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
+    if (iconData) {
+      event.dataTransfer.setData(
+        "application/icon-data",
+        JSON.stringify(iconData),
+      );
+    }
     event.dataTransfer.effectAllowed = "move";
   };
 
@@ -136,7 +152,7 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
       </div>
 
       {/* Components Section */}
-      <div className="flex-1">
+      <div className="mb-4">
         <h2 className="text-lg font-semibold text-white mb-4">Components</h2>
         <div className="space-y-2">
           {symbols.map((symbol) => (
@@ -153,6 +169,71 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
               </span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Icons Section with Search */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <h2 className="text-lg font-semibold text-white mb-3">Icons</h2>
+
+        {/* Search Input */}
+        <div className="relative mb-3">
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
+          <input
+            type="text"
+            value={iconSearchQuery}
+            onChange={(e) => setIconSearchQuery(e.target.value)}
+            placeholder="Search icons..."
+            className="w-full pl-9 pr-8 py-2 bg-neutral-800 border border-white/10 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          {iconSearchQuery && (
+            <button
+              onClick={() => setIconSearchQuery("")}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-white/10 rounded transition-colors"
+            >
+              <CloseIcon className="h-4 w-4 text-white/40" />
+            </button>
+          )}
+        </div>
+
+        {/* Icons Grid */}
+        <div className="flex-1 overflow-y-auto">
+          {filteredIcons.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {filteredIcons.map((iconItem) => (
+                <div
+                  key={iconItem.id}
+                  className="flex flex-col items-center gap-1 p-2 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 hover:border-blue-500/50 transition-all"
+                  draggable
+                  onDragStart={(event) =>
+                    onDragStart(event, "iconNode", iconItem)
+                  }
+                  title={`Drag to add ${iconItem.name}`}
+                >
+                  <img
+                    src={iconItem.icon}
+                    alt={iconItem.name}
+                    className="w-8 h-8 object-contain"
+                    draggable={false}
+                  />
+                  <span className="text-[10px] font-medium text-white/70 text-center truncate w-full">
+                    {iconItem.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-white/40">
+              <SearchIcon className="h-8 w-8 mb-2" />
+              <p className="text-sm">No icons found</p>
+              <p className="text-xs mt-1">Try a different search term</p>
+            </div>
+          )}
+        </div>
+
+        {/* Icon count */}
+        <div className="mt-2 text-xs text-white/40 text-center">
+          {filteredIcons.length} of {ICONS.length} icons
         </div>
       </div>
 
