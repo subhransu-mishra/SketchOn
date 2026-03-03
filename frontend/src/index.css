@@ -29,3 +29,49 @@ body {
 a {
   text-decoration: none;
 }
+
+/* Safe area for notched devices */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Improve drag cursor states */
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grab:active {
+  cursor: grabbing;
+}
+
+/* ReactFlow custom styles */
+.react-flow__node {
+  cursor: grab;
+}
+
+.react-flow__node:active {
+  cursor: grabbing;
+}
+
+.react-flow__handle {
+  opacity: 0.7;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+
+.react-flow__node:hover .react-flow__handle {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  .react-flow__node {
+    touch-action: none;
+  }
+
+  .react-flow__pane {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}

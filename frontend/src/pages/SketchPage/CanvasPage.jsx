@@ -295,16 +295,19 @@ const CanvasPage = () => {
 
   return (
     <>
-      <div className="h-screen bg-neutral-950 text-white flex">
+      <div className="h-screen bg-neutral-950 text-white flex md:flex-row flex-col">
         <Sidebar
           currentProject={currentProject}
           saveStatus={saveStatus}
           onManualSave={handleManualSave}
         />
-        <CanvasSurface
-          projectData={projectData}
-          onDataChange={handleProjectDataChange}
-        />
+        {/* Add padding bottom on mobile for the bottom bar */}
+        <div className="flex-1 h-full md:pb-0 pb-24">
+          <CanvasSurface
+            projectData={projectData}
+            onDataChange={handleProjectDataChange}
+          />
+        </div>
       </div>
 
       {/* Project Title Modal */}

@@ -5,6 +5,9 @@ import ReactFlow, {
   addEdge,
   Controls,
   Background,
+  ConnectionMode,
+  useReactFlow,
+  ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -25,24 +28,46 @@ const nodeTypes = {
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-const CanvasSurface = ({ projectData, onDataChange }) => {
+const CanvasFlow = ({ projectData, onDataChange }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const isLoadingData = useRef(false);
   const initialLoadComplete = useRef(false);
+  const reactFlowWrapper = useRef(null);
+  const { screenToFlowPosition } = useReactFlow();
 
   // Load project data when component mounts or projectData changes
   useEffect(() => {
     if (projectData && projectData.nodes && projectData.edges) {
       isLoadingData.current = true;
-      setNodes(projectData.nodes);
+
+      // Restore nodes with their original positions and data
+      const restoredNodes = projectData.nodes.map((node) => ({
+        ...node,
+        // Ensure position is preserved
+        position: node.position || { x: 0, y: 0 },
+        // Ensure data is preserved
+        data: {
+          ...node.data,
+          onLabelChange: onNodeLabelChange,
+        },
+      }));
+
+      setNodes(restoredNodes);
       setEdges(projectData.edges);
+
+      // Update the id counter to avoid collisions
+      const maxId = projectData.nodes.reduce((max, node) => {
+        const nodeIdNum = parseInt(node.id.replace(/\D/g, ""), 10);
+        return nodeIdNum > max ? nodeIdNum : max;
+      }, 0);
+      id = maxId + 1;
 
       // Mark initial load as complete and reset loading flag
       setTimeout(() => {
         isLoadingData.current = false;
         initialLoadComplete.current = true;
-      }, 50);
+      }, 100);
     }
   }, [projectData, setNodes, setEdges]);
 
@@ -50,12 +75,35 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
   useEffect(() => {
     // Don't trigger onDataChange during initial load or when loading data from parent
     if (onDataChange && initialLoadComplete.current && !isLoadingData.current) {
-      onDataChange(nodes, edges);
+      // Clean node data before sending to parent (remove function references)
+      const cleanNodes = nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onLabelChange: undefined, // Remove function reference
+        },
+      }));
+      onDataChange(cleanNodes, edges);
     }
   }, [nodes, edges, onDataChange]);
 
+  // Only connect when user explicitly drags from source handle to target handle
   const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
+    (params) => {
+      // Validate connection - only connect if both source and target handles exist
+      if (params.source && params.target && params.source !== params.target) {
+        setEdges((eds) =>
+          addEdge(
+            {
+              ...params,
+              type: "default",
+              animated: false,
+            },
+            eds,
+          ),
+        );
+      }
+    },
     [setEdges],
   );
 
@@ -72,15 +120,30 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
     [setNodes],
   );
 
-  // Wrap onNodesChange to track user interactions
+  // Custom nodes change handler - filter out automatic position changes during drag
   const handleNodesChange = useCallback(
     (changes) => {
-      onNodesChange(changes);
+      // Filter changes to prevent unwanted automatic movements
+      const filteredChanges = changes.filter((change) => {
+        // Allow all selection changes
+        if (change.type === "select") return true;
+        // Allow dimension changes
+        if (change.type === "dimensions") return true;
+        // Allow position changes (user dragging nodes)
+        if (change.type === "position") return true;
+        // Allow removal
+        if (change.type === "remove") return true;
+        // Allow add
+        if (change.type === "add") return true;
+        return true;
+      });
+
+      onNodesChange(filteredChanges);
     },
     [onNodesChange],
   );
 
-  // Wrap onEdgesChange to track user interactions
+  // Custom edges change handler
   const handleEdgesChange = useCallback(
     (changes) => {
       onEdgesChange(changes);
@@ -91,8 +154,8 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
+      event.stopPropagation();
 
-      const reactFlowBounds = event.currentTarget.getBoundingClientRect();
       const type = event.dataTransfer.getData("application/reactflow");
       const iconDataStr = event.dataTransfer.getData("application/icon-data");
 
@@ -100,10 +163,11 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
         return;
       }
 
-      const position = {
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      };
+      // Get the correct position using screenToFlowPosition
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
       let newNode;
 
@@ -115,6 +179,8 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
             id: getId(),
             type: "iconNode",
             position,
+            draggable: true,
+            selectable: true,
             data: {
               label: iconData.name,
               name: iconData.name,
@@ -129,26 +195,52 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
         }
       } else {
         // Handle regular nodes
+        const labelMap = {
+          rectangle: "Rectangle",
+          circle: "Circle",
+          diamond: "Diamond",
+          textNode: "Text",
+        };
+
         newNode = {
           id: getId(),
           type,
           position,
-          data: { label: `${type} node`, onLabelChange: onNodeLabelChange },
+          draggable: true,
+          selectable: true,
+          data: {
+            label: labelMap[type] || type,
+            onLabelChange: onNodeLabelChange,
+          },
         };
       }
 
-      setNodes((nds) => nds.concat(newNode));
+      setNodes((nds) => [...nds, newNode]);
     },
-    [setNodes, onNodeLabelChange],
+    [setNodes, onNodeLabelChange, screenToFlowPosition],
   );
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
+    event.stopPropagation();
     event.dataTransfer.dropEffect = "move";
   }, []);
 
+  // Prevent default drag behavior that might cause issues
+  const onNodeDragStart = useCallback((event, node) => {
+    // Just let the node drag normally, don't do anything special
+  }, []);
+
+  const onNodeDrag = useCallback((event, node) => {
+    // Normal dragging behavior
+  }, []);
+
+  const onNodeDragStop = useCallback((event, node) => {
+    // Node has been dropped, position will be updated automatically
+  }, []);
+
   return (
-    <div className="flex-1 h-full">
+    <div className="flex-1 h-full" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes.map((node) => ({
           ...node,
@@ -160,14 +252,45 @@ const CanvasSurface = ({ projectData, onDataChange }) => {
         onConnect={onConnect}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onNodeDragStart={onNodeDragStart}
+        onNodeDrag={onNodeDrag}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
+        connectionMode={ConnectionMode.Loose}
+        snapToGrid={true}
+        snapGrid={[15, 15]}
         fitView
+        fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
         className="bg-neutral-950"
+        deleteKeyCode={["Backspace", "Delete"]}
+        selectionKeyCode={["Shift"]}
+        multiSelectionKeyCode={["Meta", "Ctrl"]}
+        panOnDrag={[1, 2]} // Only pan with middle mouse or right click
+        selectNodesOnDrag={false}
+        nodesDraggable={true}
+        nodesConnectable={true}
+        elementsSelectable={true}
+        autoPanOnConnect={false}
+        autoPanOnNodeDrag={false}
+        connectOnClick={false}
+        defaultEdgeOptions={{
+          type: "default",
+          animated: false,
+        }}
       >
-        <Controls className="bg-neutral-800 border border-white/10" />
-        <Background color="#404040" />
+        <Controls className="bg-neutral-800 border border-white/10 [&>button]:bg-neutral-800 [&>button]:border-white/10 [&>button]:text-white [&>button:hover]:bg-neutral-700" />
+        <Background color="#404040" gap={15} />
       </ReactFlow>
     </div>
+  );
+};
+
+// Wrap with ReactFlowProvider for screenToFlowPosition to work
+const CanvasSurface = ({ projectData, onDataChange }) => {
+  return (
+    <ReactFlowProvider>
+      <CanvasFlow projectData={projectData} onDataChange={onDataChange} />
+    </ReactFlowProvider>
   );
 };
 
