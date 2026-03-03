@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Handle, Position } from "reactflow";
+import { IoImageOutline as ImageIcon } from "react-icons/io5";
 
 const IconNode = ({ id, data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label || data.name || "Icon");
+  const [imageError, setImageError] = useState(false);
   const inputRef = useRef();
 
   // Update label when data changes
@@ -59,15 +61,18 @@ const IconNode = ({ id, data, selected }) => {
 
       {/* Icon Image */}
       <div className="w-14 h-14 flex items-center justify-center mb-2 bg-neutral-700/50 rounded-lg p-2">
-        <img
-          src={data.icon}
-          alt={data.name || label}
-          className="w-full h-full object-contain pointer-events-none"
-          draggable={false}
-          onError={(e) => {
-            e.target.style.display = "none";
-          }}
-        />
+        {imageError ? (
+          <ImageIcon className="w-10 h-10 text-white/30" />
+        ) : (
+          <img
+            src={data.icon}
+            alt={data.name || label}
+            className="w-full h-full object-contain pointer-events-none"
+            draggable={false}
+            onError={() => setImageError(true)}
+            loading="lazy"
+          />
+        )}
       </div>
 
       {/* Label */}

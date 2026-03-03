@@ -111,14 +111,14 @@ export const ICONS = [
     name: "Load Balancer",
     keywords: ["load", "balancer", "lb", "traffic", "distribution", "scaling"],
     category: "infrastructure",
-    icon: "/icons/load balancer.png",
+    icon: "/icons/load%20balancer.png",
   },
   {
     id: "mysql",
     name: "MySQL",
     keywords: ["mysql", "database", "sql", "db", "relational", "oracle"],
     category: "database",
-    icon: "/icons/my sql.png",
+    icon: "/icons/my%20sql.png",
   },
   {
     id: "nginx",
@@ -147,7 +147,7 @@ export const ICONS = [
       "amqp",
     ],
     category: "infrastructure",
-    icon: "/icons/rabbit mq.png",
+    icon: "/icons/rabbit%20mq.png",
   },
   {
     id: "react",
@@ -175,7 +175,7 @@ export const ICONS = [
     name: "SQL Server",
     keywords: ["sql", "server", "microsoft", "mssql", "database", "relational"],
     category: "database",
-    icon: "/icons/sql server.png",
+    icon: "/icons/sql%20server.png",
   },
   {
     id: "user",
