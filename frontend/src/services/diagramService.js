@@ -17,142 +17,161 @@ class DiagramService {
     this.getAuthToken = getAuthToken;
   }
 
-  // Helper method to safely parse response
+  // Helper method to safely parse response - FIXED: reads body only once
   async parseResponse(response, context = "API call") {
-    try {
-      // Log response details for debugging
+    // Read body as text first to avoid "body stream already read" error
+    const textContent = await response.text();
+
+    // Only log in development to reduce production overhead
+    const isDev = import.meta.env.DEV;
+    if (isDev) {
       console.log(`${context} response:`, {
         status: response.status,
-        statusText: response.statusText,
         ok: response.ok,
-        headers: Object.fromEntries(response.headers),
         url: response.url,
       });
-
-      // Check if response is ok
-      if (!response.ok) {
-        // Try to get error details, but handle non-JSON responses
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          // Response is not JSON, get text content
-          const textContent = await response.text();
-          console.error(
-            "Non-JSON error response:",
-            textContent.substring(0, 500),
-          );
-
-          if (textContent.includes("<!DOCTYPE")) {
-            errorMessage = `Server returned HTML error page instead of JSON. This usually means the API endpoint is not available or there's a server configuration issue.`;
-          } else {
-            errorMessage = `Server error: ${errorMessage}. Response: ${textContent.substring(0, 200)}`;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Check content type
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        console.warn("Response is not JSON:", contentType);
-        const textContent = await response.text();
-        console.log("Text response:", textContent.substring(0, 500));
-
-        if (textContent.includes("<!DOCTYPE")) {
-          throw new Error(
-            "Server returned HTML page instead of JSON API response. Check if the API server is running correctly.",
-          );
-        }
-
-        // Try to parse as JSON anyway
-        try {
-          return JSON.parse(textContent);
-        } catch {
-          throw new Error(
-            `Expected JSON response but got: ${contentType}. Content: ${textContent.substring(0, 200)}`,
-          );
-        }
-      }
-
-      // Parse JSON response
-      const data = await response.json();
-      console.log(`${context} success:`, data);
-      return data;
-    } catch (error) {
-      console.error(`Error parsing ${context} response:`, error);
-      throw error;
     }
+
+    // Try to parse as JSON
+    let data = null;
+    try {
+      data = textContent ? JSON.parse(textContent) : null;
+    } catch {
+      // Not valid JSON
+      if (isDev) {
+        console.warn(`${context}: Response is not valid JSON`);
+      }
+    }
+
+    // Handle error responses
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText || "Error"}`;
+
+      if (data && data.message) {
+        errorMessage = data.message;
+      } else if (textContent.includes("<!DOCTYPE")) {
+        errorMessage =
+          "Server returned HTML error page. API endpoint may be unavailable.";
+      } else if (textContent.length > 0) {
+        errorMessage = `Server error: ${textContent.substring(0, 200)}`;
+      }
+
+      // Add status code hint for common errors
+      if (response.status === 401) {
+        errorMessage = "Unauthorized - Please sign in again";
+      } else if (response.status === 404) {
+        errorMessage =
+          "Resource not found - The requested item may have been deleted";
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    // Handle HTML response for success status (shouldn't happen but safety check)
+    if (textContent.includes("<!DOCTYPE")) {
+      throw new Error(
+        "Server returned HTML instead of JSON. Check API configuration.",
+      );
+    }
+
+    // Return parsed data or throw if no valid data
+    if (data === null && textContent.length > 0) {
+      throw new Error(
+        `Invalid JSON response: ${textContent.substring(0, 100)}`,
+      );
+    }
+
+    return data || {};
   }
 
   // Get all diagrams for the authenticated user
   async getAllDiagrams() {
+    const isDev = import.meta.env.DEV;
+
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
+
+    const token = await this.getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
+
+    if (isDev) {
+      console.log("Fetching diagrams from:", `${API_BASE_URL}/diagrams`);
+    }
+
+    // Add timeout for production reliability
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
     try {
-      if (!this.getAuthToken) {
-        throw new Error("Authentication not initialized. Please sign in.");
-      }
-
-      const token = await this.getAuthToken();
-
-      if (!token) {
-        throw new Error("No authentication token available");
-      }
-
-      console.log("Making request to:", `${API_BASE_URL}/diagrams`);
-      console.log("Auth token exists:", !!token);
-      console.log("Auth token length:", token ? token.length : 0);
-      console.log("Environment:", window.location.hostname);
-
       const response = await fetch(`${API_BASE_URL}/diagrams`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
 
-      // Use the safe response parser
-      const data = await this.parseResponse(response, "getAllDiagrams");
-      return data;
+      clearTimeout(timeoutId);
+      return await this.parseResponse(response, "getAllDiagrams");
     } catch (error) {
-      console.error("Error fetching diagrams:", error);
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error(
+          "Request timed out. Please check your connection and try again.",
+        );
+      }
       throw error;
     }
   }
 
   // Get a single diagram by ID
   async getDiagram(diagramId) {
-    try {
-      if (!this.getAuthToken) {
-        throw new Error("Authentication not initialized. Please sign in.");
-      }
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
 
-      const token = await this.getAuthToken();
+    const token = await this.getAuthToken();
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
       const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
 
-      const data = await this.parseResponse(response, "getDiagram");
-      return data;
+      clearTimeout(timeoutId);
+      return await this.parseResponse(response, "getDiagram");
     } catch (error) {
-      console.error("Error fetching diagram:", error);
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error("Request timed out. Please try again.");
+      }
       throw error;
     }
   }
 
   // Create a new diagram
   async createDiagram(diagramData) {
-    try {
-      if (!this.getAuthToken) {
-        throw new Error("Authentication not initialized. Please sign in.");
-      }
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
 
-      const token = await this.getAuthToken();
+    const token = await this.getAuthToken();
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
       const response = await fetch(`${API_BASE_URL}/diagrams`, {
         method: "POST",
         headers: {
@@ -160,59 +179,67 @@ class DiagramService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(diagramData),
+        signal: controller.signal,
       });
 
-      const data = await this.parseResponse(response, "createDiagram");
-      return data;
+      clearTimeout(timeoutId);
+      return await this.parseResponse(response, "createDiagram");
     } catch (error) {
-      console.error("Error creating diagram:", error);
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error("Request timed out while creating diagram.");
+      }
       throw error;
     }
   }
 
   // Update/Save a diagram
   async saveDiagram(diagramId, updateData) {
-    try {
-      if (!this.getAuthToken) {
-        throw new Error("Authentication not initialized. Please sign in.");
-      }
+    const isDev = import.meta.env.DEV;
 
-      const token = await this.getAuthToken();
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
 
-      if (!token) {
-        throw new Error("No authentication token available");
-      }
+    const token = await this.getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
 
-      if (!diagramId) {
-        throw new Error("No diagram ID provided");
-      }
+    if (!diagramId) {
+      throw new Error("No diagram ID provided");
+    }
 
-      // Validate and sanitize update data
-      if (!updateData || typeof updateData !== "object") {
-        throw new Error("Invalid update data provided");
-      }
+    if (!updateData || typeof updateData !== "object") {
+      throw new Error("Invalid update data provided");
+    }
 
-      // Deep sanitize the data to ensure proper JSON serialization
-      const sanitizedData = {
-        ...updateData,
-        nodes: Array.isArray(updateData.nodes)
-          ? updateData.nodes.filter(
-              (node) => node != null && typeof node === "object",
-            )
-          : [],
-        edges: Array.isArray(updateData.edges)
-          ? updateData.edges.filter(
-              (edge) => edge != null && typeof edge === "object",
-            )
-          : [],
-      };
+    // Sanitize the data
+    const sanitizedData = {
+      ...updateData,
+      nodes: Array.isArray(updateData.nodes)
+        ? updateData.nodes.filter(
+            (node) => node != null && typeof node === "object",
+          )
+        : [],
+      edges: Array.isArray(updateData.edges)
+        ? updateData.edges.filter(
+            (edge) => edge != null && typeof edge === "object",
+          )
+        : [],
+    };
 
-      console.log(`Saving diagram ${diagramId} with sanitized data:`, {
+    if (isDev) {
+      console.log(`Saving diagram ${diagramId}:`, {
         nodesCount: sanitizedData.nodes.length,
         edgesCount: sanitizedData.edges.length,
-        title: sanitizedData.title,
       });
+    }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s for save
+
+    try {
       const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}`, {
         method: "PUT",
         headers: {
@@ -220,37 +247,48 @@ class DiagramService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(sanitizedData),
+        signal: controller.signal,
       });
 
-      console.log(`Response status: ${response.status}`);
-      const data = await this.parseResponse(response, "saveDiagram");
-      return data;
+      clearTimeout(timeoutId);
+      return await this.parseResponse(response, "saveDiagram");
     } catch (error) {
-      console.error("Error saving diagram:", error);
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error("Save request timed out. Please try again.");
+      }
       throw error;
     }
   }
 
   // Delete a diagram
   async deleteDiagram(diagramId) {
-    try {
-      if (!this.getAuthToken) {
-        throw new Error("Authentication not initialized. Please sign in.");
-      }
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
 
-      const token = await this.getAuthToken();
+    const token = await this.getAuthToken();
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
       const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
 
-      const data = await this.parseResponse(response, "deleteDiagram");
-      return data;
+      clearTimeout(timeoutId);
+      return await this.parseResponse(response, "deleteDiagram");
     } catch (error) {
-      console.error("Error deleting diagram:", error);
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error("Delete request timed out. Please try again.");
+      }
       throw error;
     }
   }
@@ -301,38 +339,32 @@ export const useDiagramService = () => {
   const { getToken, isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const [isReady, setIsReady] = React.useState(false);
+  const isDev = import.meta.env.DEV;
 
   // Set up auth provider - only after Clerk has fully loaded
   React.useEffect(() => {
-    // Wait for Clerk to finish loading before making any decisions
     if (!isLoaded) {
-      console.log("Clerk still loading, waiting...");
       return;
     }
 
     if (isSignedIn && user) {
-      console.log("Setting up auth provider for user:", user.id);
+      if (isDev) {
+        console.log("Setting up auth provider for user:", user.id);
+      }
       const authProvider = async () => {
-        try {
-          const token = await getToken();
-          if (!token) {
-            throw new Error("Failed to retrieve authentication token");
-          }
-          console.log("Auth token retrieved successfully");
-          return token;
-        } catch (error) {
-          console.error("Error getting auth token:", error);
-          throw error;
+        const token = await getToken();
+        if (!token) {
+          throw new Error("Failed to retrieve authentication token");
         }
+        return token;
       };
       diagramService.setAuthProvider(authProvider);
       setIsReady(true);
     } else {
-      console.log("User not signed in after Clerk loaded");
       diagramService.setAuthProvider(null);
       setIsReady(false);
     }
-  }, [isLoaded, isSignedIn, user, getToken]);
+  }, [isLoaded, isSignedIn, user, getToken, isDev]);
 
   // Return both the service and ready state
   return {

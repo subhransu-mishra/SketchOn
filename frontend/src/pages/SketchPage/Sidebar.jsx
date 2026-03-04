@@ -14,18 +14,13 @@ import {
   IoMenuOutline as MenuIcon,
   IoChevronDownOutline as ChevronDownIcon,
   IoChevronUpOutline as ChevronUpIcon,
-  IoImageOutline as ImageIcon,
-  IoExpandOutline as ExpandIcon,
 } from "react-icons/io5";
 import { ICONS, searchIcons } from "../../data/icons";
-import IconSelectorModal from "../../components/IconSelectorModal";
 
 const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
   const [iconSearchQuery, setIconSearchQuery] = useState("");
   const [mobileTab, setMobileTab] = useState("shapes"); // 'shapes', 'icons', 'info'
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
-  const [isIconModalOpen, setIsIconModalOpen] = useState(false);
-  const [imageErrors, setImageErrors] = useState({});
 
   const symbols = [
     { id: "rectangle", type: "rectangle", label: "Rectangle", icon: "⬜" },
@@ -38,16 +33,6 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
   const filteredIcons = useMemo(() => {
     return searchIcons(iconSearchQuery);
   }, [iconSearchQuery]);
-
-  const handleImageError = (iconId) => {
-    setImageErrors((prev) => ({ ...prev, [iconId]: true }));
-  };
-
-  const handleIconFromModal = (iconItem) => {
-    // Create a custom event to add the icon to the canvas
-    const event = new CustomEvent("addIconToCanvas", { detail: iconItem });
-    window.dispatchEvent(event);
-  };
 
   const onDragStart = (event, nodeType, iconData = null) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
@@ -197,17 +182,7 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
 
       {/* Icons Section with Search */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-white">Icons</h2>
-          <button
-            onClick={() => setIsIconModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-            title="Open full icon selector"
-          >
-            <ExpandIcon className="h-3.5 w-3.5" />
-            Browse All
-          </button>
-        </div>
+        <h2 className="text-lg font-semibold text-white mb-3">Icons</h2>
 
         {/* Search Input */}
         <div className="relative mb-3">
@@ -217,7 +192,7 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
             value={iconSearchQuery}
             onChange={(e) => setIconSearchQuery(e.target.value)}
             placeholder="Search icons..."
-            className="w-full pl-9 pr-8 py-2 bg-neutral-800 border border-white/10 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-colors"
+            className="w-full pl-9 pr-8 py-2 bg-neutral-800 border border-white/10 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
           />
           {iconSearchQuery && (
             <button
@@ -236,27 +211,19 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
               {filteredIcons.map((iconItem) => (
                 <div
                   key={iconItem.id}
-                  className="flex flex-col items-center gap-1 p-2 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 hover:border-purple-500/50 transition-all active:cursor-grabbing"
+                  className="flex flex-col items-center gap-1 p-2 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 hover:border-blue-500/50 transition-all active:cursor-grabbing"
                   draggable
                   onDragStart={(event) =>
                     onDragStart(event, "iconNode", iconItem)
                   }
                   title={`Drag to add ${iconItem.name}`}
                 >
-                  <div className="w-8 h-8 flex items-center justify-center">
-                    {imageErrors[iconItem.id] ? (
-                      <ImageIcon className="w-6 h-6 text-white/30" />
-                    ) : (
-                      <img
-                        src={iconItem.icon}
-                        alt={iconItem.name}
-                        className="w-8 h-8 object-contain pointer-events-none"
-                        draggable={false}
-                        onError={() => handleImageError(iconItem.id)}
-                        loading="lazy"
-                      />
-                    )}
-                  </div>
+                  <img
+                    src={iconItem.icon}
+                    alt={iconItem.name}
+                    className="w-8 h-8 object-contain pointer-events-none"
+                    draggable={false}
+                  />
                   <span className="text-[10px] font-medium text-white/70 text-center truncate w-full">
                     {iconItem.name}
                   </span>
@@ -317,16 +284,7 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
 
           {mobileTab === "icons" && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white/80">Icons</h3>
-                <button
-                  onClick={() => setIsIconModalOpen(true)}
-                  className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                >
-                  <ExpandIcon className="h-3 w-3" />
-                  Browse
-                </button>
-              </div>
+              <h3 className="text-sm font-semibold text-white/80">Icons</h3>
               {/* Search */}
               <div className="relative">
                 <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -335,7 +293,7 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
                   value={iconSearchQuery}
                   onChange={(e) => setIconSearchQuery(e.target.value)}
                   placeholder="Search icons..."
-                  className="w-full pl-9 pr-8 py-2 bg-neutral-800 border border-white/10 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 transition-colors"
+                  className="w-full pl-9 pr-8 py-2 bg-neutral-800 border border-white/10 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
                 />
                 {iconSearchQuery && (
                   <button
@@ -352,26 +310,18 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
                   {filteredIcons.map((iconItem) => (
                     <div
                       key={iconItem.id}
-                      className="flex flex-col items-center gap-1 p-2 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 hover:border-purple-500/50 active:bg-neutral-600 transition-all"
+                      className="flex flex-col items-center gap-1 p-2 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 active:bg-neutral-600 transition-all"
                       draggable
                       onDragStart={(event) =>
                         onDragStart(event, "iconNode", iconItem)
                       }
                     >
-                      <div className="w-8 h-8 flex items-center justify-center">
-                        {imageErrors[iconItem.id] ? (
-                          <ImageIcon className="w-6 h-6 text-white/30" />
-                        ) : (
-                          <img
-                            src={iconItem.icon}
-                            alt={iconItem.name}
-                            className="w-8 h-8 object-contain pointer-events-none"
-                            draggable={false}
-                            onError={() => handleImageError(iconItem.id)}
-                            loading="lazy"
-                          />
-                        )}
-                      </div>
+                      <img
+                        src={iconItem.icon}
+                        alt={iconItem.name}
+                        className="w-8 h-8 object-contain pointer-events-none"
+                        draggable={false}
+                      />
                       <span className="text-[9px] font-medium text-white/70 text-center truncate w-full">
                         {iconItem.name}
                       </span>
@@ -521,11 +471,6 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
     <>
       <DesktopSidebar />
       <MobileBottomBar />
-      <IconSelectorModal
-        isOpen={isIconModalOpen}
-        onClose={() => setIsIconModalOpen(false)}
-        onSelectIcon={handleIconFromModal}
-      />
     </>
   );
 };

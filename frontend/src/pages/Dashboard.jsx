@@ -20,30 +20,16 @@ const Dashboard = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Load projects from API on component mount
   useEffect(() => {
     const loadProjects = async () => {
-      // Wait for Clerk to finish loading
-      if (!isLoaded) {
-        console.log("Clerk still loading...");
-        return;
-      }
-
-      if (!isSignedIn) {
-        console.log("User not signed in, redirecting to home...");
-        navigate("/");
-        return;
-      }
-
-      if (!user) {
-        console.log("User data not loaded yet, waiting...");
-        return;
-      }
-
-      // Wait for auth service to be ready
-      if (!isReady) {
-        console.log("Auth service not ready yet, waiting...");
+      // Wait for all dependencies to be ready
+      if (!isLoaded || !isSignedIn || !user || !isReady) {
+        if (isLoaded && !isSignedIn) {
+          navigate("/");
+        }
         return;
       }
 
@@ -52,7 +38,6 @@ const Dashboard = () => {
         setError(null);
         loadingManager.startLoading("dashboard-projects");
 
-        console.log("Loading diagrams for user:", user.id);
         const response = await diagramService.getAllDiagrams();
         const diagrams = response.data || [];
 
@@ -71,18 +56,27 @@ const Dashboard = () => {
         }));
 
         setProjects(transformedProjects);
+        setRetryCount(0); // Reset retry count on success
       } catch (err) {
-        console.error("Error loading projects:", err);
-        if (err.message?.includes("Unauthorized")) {
+        const errorMsg = err.message || "Failed to load projects";
+
+        // Handle specific error types
+        if (errorMsg.includes("Unauthorized") || errorMsg.includes("sign in")) {
           setError("Authentication failed. Please sign in again.");
-          // Consider redirecting to sign-in page
-          setTimeout(() => navigate("/"), 3000);
-        } else if (err.message?.includes("Failed to fetch")) {
+          setTimeout(() => navigate("/"), 2000);
+        } else if (errorMsg.includes("timed out")) {
           setError(
-            "Unable to connect to server. Please check your internet connection.",
+            "Request timed out. The server may be waking up - please retry.",
+          );
+        } else if (
+          err.name === "TypeError" ||
+          errorMsg.includes("Failed to fetch")
+        ) {
+          setError(
+            "Unable to connect to server. Please check your connection.",
           );
         } else {
-          setError(err.message || "Failed to load projects");
+          setError(errorMsg);
         }
       } finally {
         setIsLoading(false);
@@ -91,7 +85,19 @@ const Dashboard = () => {
     };
 
     loadProjects();
-  }, [isLoaded, isSignedIn, user, isReady, diagramService, navigate]);
+  }, [
+    isLoaded,
+    isSignedIn,
+    user,
+    isReady,
+    diagramService,
+    navigate,
+    retryCount,
+  ]);
+
+  const handleRetry = () => {
+    setRetryCount((c) => c + 1);
+  };
 
   const handleNewProject = () => {
     navigate("/canvas?new=true");
@@ -174,7 +180,8 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-semibold mb-2">
-            Welcome back, {user?.firstName || user?.username || "User"}! 👋
+            {/* Welcome back, {user?.firstName || user?.username || "User"}! 👋 */}
+            Start designing your next project
           </h1>
           <p className="text-white/60">
             Continue working on your projects or start a new one.
@@ -185,7 +192,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <button
             onClick={handleNewProject}
-            className="inline-flex items-center gap-3 rounded-xl border border-dashed border-white/20 bg-white/5 px-6 py-4 text-left transition hover:border-white/40 hover:bg-white/10"
+            className="inline-flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-white/20 bg-white/5 px-6 py-4 text-left transition hover:border-white/40 hover:bg-white/10"
           >
             <PlusCircleIcon className="h-8 w-8 text-blue-400" />
             <div>
@@ -202,17 +209,27 @@ const Dashboard = () => {
           <div className="text-center py-12">
             <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-white/60">Loading your projects...</p>
+            {retryCount > 0 && (
+              <p className="text-white/40 text-sm mt-2">
+                Attempt {retryCount + 1}...
+              </p>
+            )}
           </div>
         ) : error ? (
           <div className="text-center py-12">
             <div className="text-red-400 mb-4">⚠️ Error loading projects</div>
             <p className="text-white/60 mb-4">{error}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={handleRetry}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Retry
+              Try Again
             </button>
+            {error.includes("timed out") && (
+              <p className="text-white/40 text-xs mt-3">
+                Free-tier servers may take 30-60s to wake up on first request.
+              </p>
+            )}
           </div>
         ) : projects.length > 0 ? (
           <div>
@@ -279,7 +296,7 @@ const Dashboard = () => {
 
                   <button
                     onClick={() => handleOpenProject(project.id)}
-                    className="w-full rounded-lg border border-white/15 bg-white/5 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10"
+                    className="w-full cursor-pointer rounded-lg border border-white/15 bg-white/5 py-2 text-sm font-medium text-white transition hover:border-white/30 hover:bg-white/10"
                   >
                     Open Project
                   </button>

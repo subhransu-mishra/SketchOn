@@ -239,6 +239,37 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
     // Node has been dropped, position will be updated automatically
   }, []);
 
+  // Listen for custom event to add icons from modal click
+  useEffect(() => {
+    const handleAddIconToCanvas = (event) => {
+      const iconData = event.detail;
+      if (!iconData) return;
+
+      // Add icon at center of the visible viewport
+      const newNode = {
+        id: getId(),
+        type: "iconNode",
+        position: { x: 250, y: 150 },
+        draggable: true,
+        selectable: true,
+        data: {
+          label: iconData.name,
+          name: iconData.name,
+          icon: iconData.icon,
+          iconId: iconData.id,
+          onLabelChange: onNodeLabelChange,
+        },
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+    };
+
+    window.addEventListener("addIconToCanvas", handleAddIconToCanvas);
+    return () => {
+      window.removeEventListener("addIconToCanvas", handleAddIconToCanvas);
+    };
+  }, [setNodes, onNodeLabelChange]);
+
   return (
     <div className="flex-1 h-full" ref={reactFlowWrapper}>
       <ReactFlow

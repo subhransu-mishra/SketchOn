@@ -54,6 +54,17 @@ const IconSelectorModal = ({ isOpen, onClose, onSelectIcon }) => {
     setImageErrors((prev) => ({ ...prev, [iconId]: true }));
   };
 
+  const onDragStart = (event, iconItem) => {
+    event.dataTransfer.setData("application/reactflow", "iconNode");
+    event.dataTransfer.setData(
+      "application/icon-data",
+      JSON.stringify(iconItem),
+    );
+    event.dataTransfer.effectAllowed = "move";
+    // Close modal when drag starts so user can see the canvas
+    onClose();
+  };
+
   const getCategoryLabel = (category) => {
     const labels = {
       all: "All Icons",
@@ -144,16 +155,21 @@ const IconSelectorModal = ({ isOpen, onClose, onSelectIcon }) => {
 
         {/* Icons Grid */}
         <div className="flex-1 overflow-y-auto p-4">
+          <p className="text-xs text-white/40 mb-3 text-center">
+            💡 Click to add or drag icons to the canvas
+          </p>
           {filteredIcons.length > 0 ? (
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
               {filteredIcons.map((iconItem) => (
-                <button
+                <div
                   key={iconItem.id}
                   onClick={() => handleIconSelect(iconItem)}
-                  className="group flex flex-col items-center gap-2 p-3 bg-neutral-800 rounded-xl border border-white/10 hover:bg-neutral-700 hover:border-purple-500/50 hover:scale-105 transition-all duration-200"
-                  title={iconItem.name}
+                  draggable
+                  onDragStart={(event) => onDragStart(event, iconItem)}
+                  className="group flex flex-col items-center gap-2 p-3 bg-neutral-800 rounded-xl border border-white/10 hover:bg-neutral-700 hover:border-purple-500/50 hover:scale-105 transition-all duration-200 cursor-grab active:cursor-grabbing"
+                  title={`${iconItem.name} - Click or drag to add`}
                 >
-                  <div className="w-12 h-12 flex items-center justify-center bg-neutral-700/50 rounded-lg p-1.5">
+                  <div className="w-12 h-12 flex items-center justify-center bg-neutral-700/50 rounded-lg p-1.5 pointer-events-none">
                     {imageErrors[iconItem.id] ? (
                       <ImageIcon className="w-8 h-8 text-white/30" />
                     ) : (
@@ -163,13 +179,14 @@ const IconSelectorModal = ({ isOpen, onClose, onSelectIcon }) => {
                         className="w-full h-full object-contain"
                         onError={() => handleImageError(iconItem.id)}
                         loading="lazy"
+                        draggable={false}
                       />
                     )}
                   </div>
-                  <span className="text-xs font-medium text-white/70 group-hover:text-white text-center truncate w-full">
+                  <span className="text-xs font-medium text-white/70 group-hover:text-white text-center truncate w-full pointer-events-none">
                     {iconItem.name}
                   </span>
-                </button>
+                </div>
               ))}
             </div>
           ) : (
