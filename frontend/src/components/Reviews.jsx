@@ -1,35 +1,8 @@
-import React from "react";
+﻿import React from "react";
+import { motion } from "framer-motion";
+import { FiMessageCircle, FiHeart, FiSend } from "react-icons/fi";
 
-const Star = () => (
-  <svg aria-hidden="true" className="h-4 w-4 fill-white/90" viewBox="0 0 24 24">
-    <path d="M12 2.5l2.95 6.12 6.75.98-4.88 4.76 1.15 6.71L12 17.96l-6.02 3.11 1.15-6.71L2.25 9.6l6.75-.98z" />
-  </svg>
-);
 const Reviews = () => {
-  const testimonials = [
-    {
-      name: "Alex Rivera",
-      role: "Product Design Lead",
-      quote:
-        "Canvas AI turned messy ideation boards into a crisp narrative in minutes. Feedback feels like a thoughtful peer review.",
-      rating: 5,
-    },
-    {
-      name: "Morgan Chen",
-      role: "Creative Director",
-      quote:
-        "A calm, confident experience. Suggestions are focused, actionable, and never get in the way of the flow.",
-      rating: 5,
-    },
-    {
-      name: "Taylor Brooks",
-      role: "UX Researcher",
-      quote:
-        "The quality bar jumped overnight. Meetings start with aligned boards and clear next steps.",
-      rating: 4,
-    },
-  ];
-
   return (
     <div>
       <section
@@ -37,56 +10,103 @@ const Reviews = () => {
         className="border-t border-white/5 bg-neutral-900/40"
       >
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                Reviews
-              </p>
-              <h2 className="text-3xl font-semibold sm:text-4xl">
-                Teams trust Canvas AI.
-              </h2>
-              <p className="text-white/70">
-                Consistent, candid feedback that keeps projects moving.
-              </p>
-            </div>
-            <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
-              4.8 average rating · Real users
-            </div>
-          </div>
+          <motion.div
+            className="flex flex-col items-center text-center"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <motion.div
+              className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <FiMessageCircle className="h-8 w-8 text-white/50" />
+            </motion.div>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {testimonials.map((item) => (
-              <article
-                key={item.name}
-                className="group flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:-translate-y-1 hover:border-white/30"
+            <motion.h2
+              className="text-3xl font-semibold sm:text-4xl mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+            >
+              We'd Love Your Feedback
+            </motion.h2>
+
+            <motion.p
+              className="max-w-xl text-lg text-white/60 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+            >
+              Your feedback helps us reach more people and build a better
+              product for everyone.
+            </motion.p>
+
+            <motion.div
+              className="grid gap-6 sm:grid-cols-3 w-full max-w-3xl"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              viewport={{ once: true }}
+            >
+              {[
+                {
+                  icon: FiHeart,
+                  title: "Share Your Experience",
+                  desc: "Tell us what you love and what we can improve",
+                },
+                {
+                  icon: FiSend,
+                  title: "Spread the Word",
+                  desc: "Help fellow developers discover Sketch On",
+                },
+                {
+                  icon: FiMessageCircle,
+                  title: "Shape the Future",
+                  desc: "Your ideas drive our product roadmap",
+                },
+              ].map((item, index) => (
+                <motion.div
+                  key={item.title}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-white/20"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <item.icon className="h-6 w-6 text-white/50 mb-3" />
+                  <p className="text-sm font-semibold text-white mb-1">
+                    {item.title}
+                  </p>
+                  <p className="text-xs text-white/50 leading-relaxed">
+                    {item.desc}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.p
+              className="mt-8 text-sm text-white/40"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+              viewport={{ once: true }}
+            >
+              Have feedback? Drop us a ⭐
+              <a
+                href="https://github.com/subhransu-mishra/SketchOn"
+                className="text-white/60 underline underline-offset-2 hover:text-white transition"
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="h-10 w-10 rounded-full border border-white/15 bg-white/10"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold">{item.name}</p>
-                    <p className="text-xs text-white/60">{item.role}</p>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm leading-relaxed text-white/80">
-                  “{item.quote}”
-                </p>
-                <div className="mt-4 flex items-center gap-1">
-                  {Array.from({ length: item.rating }).map((_, idx) => (
-                    <Star key={idx} />
-                  ))}
-                  {Array.from({ length: 5 - item.rating }).map((_, idx) => (
-                    <span key={idx} className="h-4 w-4" />
-                  ))}
-                  <span className="ml-2 text-xs text-white/60">
-                    {item.rating}.0
-                  </span>
-                </div>
-              </article>
-            ))}
-          </div>
+                here
+              </a>
+            </motion.p>
+          </motion.div>
         </div>
       </section>
     </div>

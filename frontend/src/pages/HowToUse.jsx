@@ -5,8 +5,8 @@ import {
   FiUserPlus,
   FiPlus,
   FiEdit3,
-  FiZap,
-  FiRefreshCw,
+  FiCpu,
+  FiShare2,
   FiArrowRight,
   FiCheckCircle,
   FiStar,
@@ -22,9 +22,8 @@ const HowToUse = () => {
       details: [
         "Quick registration process",
         "Secure authentication",
-        "Free starter plan included",
+        "Free to get started",
       ],
-      color: "from-blue-500 to-cyan-500",
     },
     {
       icon: FiPlus,
@@ -32,47 +31,43 @@ const HowToUse = () => {
       description:
         "Launch your whiteboard workspace and give your project a descriptive name.",
       details: [
-        "Unlimited projects",
         "Organized workspace",
         "Easy project management",
+        "Name and manage boards",
       ],
-      color: "from-purple-500 to-pink-500",
     },
     {
       icon: FiEdit3,
-      title: "Start Building",
+      title: "Build Your Diagram",
       description:
-        "Drag and drop components to create your diagrams, wireframes, or flowcharts.",
+        "Drag and drop shapes, connect nodes, and use 30+ tech icons to lay out your architecture.",
       details: [
         "Intuitive drag & drop",
-        "Rich component library",
-        "Real-time collaboration",
+        "Rectangles, circles & diamonds",
+        "AWS, Docker, React icons & more",
       ],
-      color: "from-green-500 to-teal-500",
     },
     {
-      icon: FiZap,
-      title: "Validate with AI",
+      icon: FiCpu,
+      title: "Analyze with AI",
       description:
-        "Let our AI analyze your design for improvements and best practices.",
+        "Let AI review your diagram for structure, clarity, and design patterns.",
       details: [
         "Intelligent suggestions",
-        "Design pattern recognition",
-        "Accessibility checks",
+        "Design pattern feedback",
+        "Improve architecture quality",
       ],
-      color: "from-orange-500 to-red-500",
     },
     {
-      icon: FiRefreshCw,
-      title: "Refactor & Perfect",
+      icon: FiShare2,
+      title: "Refine & Share",
       description:
-        "Apply AI suggestions and refine your design to create professional results.",
+        "Apply improvements and share polished, professional system diagrams.",
       details: [
-        "One-click improvements",
-        "Maintain your style",
-        "Export ready designs",
+        "Iterate on feedback",
+        "Professional results",
+        "Ready to present",
       ],
-      color: "from-indigo-500 to-purple-500",
     },
   ];
 
@@ -144,11 +139,11 @@ const HowToUse = () => {
           </motion.div>
           <h1 className="text-4xl font-bold mb-4 sm:text-5xl lg:text-6xl">
             From Idea to
-            <span className="block text-blue-400">Professional Design</span>
+            <span className="block text-white/60">Professional Diagram</span>
           </h1>
           <p className="text-xl text-white/70 max-w-3xl mx-auto">
-            Follow these simple steps to transform your sketches into polished,
-            professional diagrams with the power of AI assistance.
+            Follow these simple steps to design, analyze, and share polished
+            system diagrams with the help of AI.
           </p>
         </motion.div>
 
@@ -165,21 +160,19 @@ const HowToUse = () => {
               variants={itemVariants}
               className="group relative"
             >
-              <div
-                className={`absolute -inset-4 bg-blue-500/20 rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-500`}
-              />
+              <div className="absolute -inset-4 bg-white/5 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500" />
 
               <div className="relative flex flex-col lg:flex-row items-start lg:items-center gap-8 p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
                 {/* Step Number & Icon */}
                 <div className="flex-shrink-0">
                   <div className="relative">
                     <motion.div
-                      className={`w-20 h-20 rounded-2xl bg-blue-500 p-0.5`}
+                      className="w-20 h-20 rounded-2xl border border-white/15 bg-white/5 p-0.5"
                       whileHover={{ scale: 1.05, rotate: 5 }}
                       transition={{ type: "spring", stiffness: 300 }}
                     >
                       <div className="w-full h-full rounded-2xl bg-neutral-900 flex items-center justify-center">
-                        <step.icon className="h-8 w-8 text-white" />
+                        <step.icon className="h-8 w-8 text-white/80" />
                       </div>
                     </motion.div>
 
@@ -207,7 +200,7 @@ const HowToUse = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.3 + detailIndex * 0.1 }}
                       >
-                        <FiCheckCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
+                        <FiCheckCircle className="h-4 w-4 text-white/50 flex-shrink-0" />
                         <span className="text-sm text-white/80">{detail}</span>
                       </motion.div>
                     ))}
@@ -233,7 +226,7 @@ const HowToUse = () => {
 
         {/* CTA Section */}
         <motion.div
-          className="text-center mt-16 p-8 rounded-2xl border border-white/10 bg-blue-500/10"
+          className="text-center mt-16 p-8 rounded-2xl border border-white/10 bg-white/5"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -243,8 +236,8 @@ const HowToUse = () => {
             Ready to Start Creating?
           </h2>
           <p className="text-lg text-white/70 mb-6 max-w-2xl mx-auto">
-            Join thousands of professionals who are already transforming their
-            ideas into beautiful, professional designs with Sketch On.
+            Start building professional system diagrams in minutes — draw,
+            analyze, and share with confidence.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4">
@@ -254,7 +247,7 @@ const HowToUse = () => {
             >
               <Link
                 to="/dashboard"
-                className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-blue-600 text-white font-semibold text-lg transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/25"
+                className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white text-neutral-950 font-semibold text-lg transition-all duration-300 hover:shadow-xl hover:shadow-white/10"
               >
                 <FiPlus className="h-5 w-5" />
                 Create Your First Project

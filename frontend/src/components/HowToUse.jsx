@@ -1,9 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
 import {
-  FiUpload,
-  FiEye,
-  FiRefreshCw,
+  FiPenTool,
+  FiCpu,
+  FiBox,
   FiArrowRight,
   FiCheckCircle,
 } from "react-icons/fi";
@@ -11,22 +11,19 @@ import {
 const HowToUse = () => {
   const steps = [
     {
-      icon: FiUpload,
-      title: "Upload your board",
-      body: "Drop in sketches, photos, or PDF exports. Canvas AI auto-detects layers and cleans up your canvas.",
-      color: "bg-blue-500",
+      icon: FiPenTool,
+      title: "Draw your system",
+      body: "Drag and drop shapes, connect nodes, and lay out your architecture using an intuitive whiteboard canvas.",
     },
     {
-      icon: FiEye,
-      title: "Review with AI",
-      body: "Get instant critique on structure, clarity, and accessibility. Surface the strongest ideas without bias.",
-      color: "bg-purple-500",
+      icon: FiCpu,
+      title: "Analyze with AI",
+      body: "Get instant AI-powered feedback on structure, clarity, and design patterns. Surface improvements without bias.",
     },
     {
-      icon: FiRefreshCw,
-      title: "Apply suggestions",
-      body: "One-click apply to reorganize frames, balance spacing, and refine typography while keeping your voice.",
-      color: "bg-green-500",
+      icon: FiBox,
+      title: "Use tech icons",
+      body: "Access 30+ icons — AWS, Docker, React, Kubernetes and more — to make your diagrams professional and clear.",
     },
   ];
 
@@ -70,8 +67,8 @@ const HowToUse = () => {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 viewport={{ once: true }}
               >
-                Canvas AI keeps the flow simple. Upload anything, review
-                collaboratively, and export with confidence.
+                Sketch On keeps things simple — draw, analyze, and share with
+                confidence.
               </motion.p>
             </div>
             <motion.a
@@ -106,19 +103,17 @@ const HowToUse = () => {
                   transition: { type: "spring", stiffness: 300 },
                 }}
               >
-                {/* Color overlay on hover */}
-                <div
-                  className={`absolute inset-0 ${step.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}
-                />
+                {/* Subtle overlay on hover */}
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-5 transition-opacity duration-500" />
 
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-6">
                     <motion.div
-                      className={`p-3 rounded-2xl ${step.color}`}
+                      className="p-3 rounded-2xl bg-white/10 border border-white/10"
                       whileHover={{ rotate: 10, scale: 1.1 }}
                       transition={{ type: "spring", stiffness: 300 }}
                     >
-                      <step.icon className="h-6 w-6 text-white" />
+                      <step.icon className="h-6 w-6 text-white/80" />
                     </motion.div>
 
                     <motion.div
@@ -152,7 +147,7 @@ const HowToUse = () => {
                       viewport={{ once: true }}
                     >
                       <motion.div
-                        className={`h-full ${step.color} rounded-full`}
+                        className="h-full bg-white/40 rounded-full"
                         initial={{ width: "0%" }}
                         whileInView={{ width: "100%" }}
                         transition={{
@@ -163,7 +158,7 @@ const HowToUse = () => {
                         viewport={{ once: true }}
                       />
                     </motion.div>
-                    <FiCheckCircle className="h-4 w-4 text-green-400" />
+                    <FiCheckCircle className="h-4 w-4 text-white/50" />
                   </div>
                 </div>
               </motion.article>
