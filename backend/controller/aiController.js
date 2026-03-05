@@ -212,8 +212,8 @@ const callAI = async (systemPrompt, userPrompt) => {
 
       const affordable = parseAffordableTokens(errMsg);
       if (affordable && affordable > 50) {
-        // Leave a very conservative buffer for the prompt tokens
-        maxTokens = Math.floor(affordable * 0.5);
+        // Leave a 20% buffer for the prompt tokens
+        maxTokens = Math.floor(affordable * 0.8);
         console.log(
           `OpenRouter → 402 received, retrying with max_tokens: ${maxTokens}`,
         );
