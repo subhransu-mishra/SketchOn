@@ -138,6 +138,41 @@ const formatConnections = (edges, nodes) => {
     .join("\n");
 };
 
+// Parse the affordable token count from a 402 error message.
+// e.g. "...but can only afford 1421."  → returns 1421
+const parseAffordableTokens = (errMsg) => {
+  const match = errMsg && errMsg.match(/can only afford (\d+)/i);
+  return match ? parseInt(match[1], 10) : null;
+};
+
+// Perform a single OpenRouter fetch with a given max_tokens value.
+const openRouterFetch = async (apiKey, model, messages, maxTokens) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+  let response;
+  try {
+    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://sketchon.app",
+        "X-Title": "SketchOn AI Analyze",
+      },
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages }),
+      signal: controller.signal,
+    });
+  } catch (fetchErr) {
+    clearTimeout(timeoutId);
+    throw new Error(`Failed to connect to AI service: ${fetchErr.message}`);
+  }
+  clearTimeout(timeoutId);
+
+  const rawBody = await response.text();
+  return { response, rawBody };
+};
+
 // Call AI via OpenRouter (supports sk-or-v1- keys) or Anthropic directly (sk-ant- keys)
 const callAI = async (systemPrompt, userPrompt) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -155,35 +190,41 @@ const callAI = async (systemPrompt, userPrompt) => {
       { role: "user", content: userPrompt.trim() },
     ];
 
-    console.log(`OpenRouter → trying model: ${model}`);
+    let maxTokens = 1200;
+    console.log(
+      `OpenRouter → trying model: ${model} with max_tokens: ${maxTokens}`,
+    );
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    let { response, rawBody } = await openRouterFetch(
+      apiKey,
+      model,
+      messages,
+      maxTokens,
+    );
 
-    let response;
-    try {
-      response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://sketchon.app",
-          "X-Title": "SketchOn AI Analyze",
-        },
-        body: JSON.stringify({ model, max_tokens: 1500, messages }),
-        signal: controller.signal,
-      });
-    } catch (fetchErr) {
-      clearTimeout(timeoutId);
-      console.error(
-        `OpenRouter → fetch failed for ${model}:`,
-        fetchErr.message,
-      );
-      throw new Error(`Failed to connect to AI service: ${fetchErr.message}`);
+    // If 402 (insufficient credits), auto-retry with the affordable amount
+    if (response.status === 402) {
+      let errJson = null;
+      try {
+        errJson = JSON.parse(rawBody);
+      } catch (_) {}
+      const errMsg = errJson?.error?.message || errJson?.message || rawBody;
+
+      const affordable = parseAffordableTokens(errMsg);
+      if (affordable && affordable > 50) {
+        // Leave a small buffer below the affordable cap
+        maxTokens = Math.floor(affordable * 0.9);
+        console.log(
+          `OpenRouter → 402 received, retrying with max_tokens: ${maxTokens}`,
+        );
+        ({ response, rawBody } = await openRouterFetch(
+          apiKey,
+          model,
+          messages,
+          maxTokens,
+        ));
+      }
     }
-    clearTimeout(timeoutId);
-
-    const rawBody = await response.text();
 
     if (!response.ok) {
       let errJson = null;
