@@ -395,7 +395,11 @@ OPENROUTER_MODEL=anthropic/claude-3.7-sonnet
 
 ## Screenshots
 
-> _Coming soon — Add screenshots of the landing page, canvas, dashboard, and AI analysis panel here._
+<img width="1901" height="865" alt="Screenshot 2026-03-06 003516" src="https://github.com/user-attachments/assets/1db155d3-8939-4bdc-90df-2818d8f5ed73" />
+<img width="1902" height="870" alt="Screenshot 2026-03-06 003430" src="https://github.com/user-attachments/assets/19d76caf-21a5-4ddc-88f7-5785a4abfac3" />
+<img width="1918" height="865" alt="Screenshot 2026-03-06 003358" src="https://github.com/user-attachments/assets/98e0464e-7f9b-4c2b-9352-1809037a0e89" />
+<img width="1903" height="870" alt="Screenshot 2026-03-06 003106" src="https://github.com/user-attachments/assets/4630a2ff-e34b-4cce-bbfc-2551c36debcb" />
+
 
 ---
 
