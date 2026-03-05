@@ -59,6 +59,10 @@ class DiagramService {
       // Add status code hint for common errors
       if (response.status === 401) {
         errorMessage = "Unauthorized - Please sign in again";
+      } else if (response.status === 402) {
+        errorMessage =
+          data?.message ||
+          "OpenRouter account has no credits. Add credits at openrouter.ai/credits.";
       } else if (response.status === 404) {
         errorMessage =
           "Resource not found - The requested item may have been deleted";
@@ -256,6 +260,42 @@ class DiagramService {
       clearTimeout(timeoutId);
       if (error.name === "AbortError") {
         throw new Error("Save request timed out. Please try again.");
+      }
+      throw error;
+    }
+  }
+
+  // Analyze diagram with AI
+  async analyzeDiagram({ title, nodes, edges }) {
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
+
+    const token = await this.getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for AI
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title, nodes, edges }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      return await this.parseResponse(response, "analyzeDiagram");
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error("AI analysis request timed out. Please try again.");
       }
       throw error;
     }

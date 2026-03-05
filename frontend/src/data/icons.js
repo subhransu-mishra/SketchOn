@@ -261,6 +261,20 @@ export const ICONS = [
     category: "cloud",
     icon: "/icons/s3.png",
   },
+{
+    id: "server",
+    name: "server",
+    keywords: ["server", "backend", "scaling", "ec2","cloud"],
+    category: "server",
+    icon: "/icons/server.png",
+},
+{
+    id: "server",
+    name: "server 2",
+    keywords: ["server", "backend", "scaling", "ec2","cloud"],
+    category: "server",
+    icon: "/icons/server2.png",
+},
   {
     id: "vmware",
     name: "VMware",

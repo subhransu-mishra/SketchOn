@@ -99,6 +99,7 @@ app.get("/health", (req, res) => {
   });
 });
 app.use("/api/diagrams", require("./routes/diagramRoutes.js"));
+app.use("/api/ai", require("./routes/aiRoutes.js"));
 
 // Debug routes in development
 if (process.env.NODE_ENV !== "production") {

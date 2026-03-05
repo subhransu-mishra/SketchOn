@@ -7,6 +7,7 @@ import {
 } from "react-icons/io5";
 import Sidebar from "./Sidebar";
 import CanvasSurface from "../../components/CanvasSurface";
+import AiAnalysisPanel from "../../components/AiAnalysisPanel";
 import { useDiagramService } from "../../services/diagramService";
 import { loadingManager } from "../../services/apiUtils";
 
@@ -26,6 +27,12 @@ const CanvasPage = () => {
   // Modal states
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
+
+  // AI Analysis states
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   const isNewProject = searchParams.get("new") === "true";
   const projectId = searchParams.get("project");
@@ -250,6 +257,39 @@ const CanvasPage = () => {
     }
   };
 
+  // AI Analysis handler
+  const handleAiAnalyze = async () => {
+    if (!projectData.nodes || projectData.nodes.length === 0) {
+      setAiError("Add some components to your diagram before analyzing.");
+      setShowAiPanel(true);
+      return;
+    }
+
+    setShowAiPanel(true);
+    setAiLoading(true);
+    setAiError(null);
+    setAiAnalysis(null);
+
+    try {
+      const result = await diagramService.analyzeDiagram({
+        title: currentProject?.title || "Untitled Diagram",
+        nodes: projectData.nodes,
+        edges: projectData.edges,
+      });
+
+      if (result.success) {
+        setAiAnalysis(result.data);
+      } else {
+        setAiError(result.message || "Analysis failed");
+      }
+    } catch (err) {
+      console.error("AI analysis error:", err);
+      setAiError(err.message || "Failed to analyze diagram");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleProjectDataChange = useCallback(
     (nodes, edges) => {
       // Prevent circular updates
@@ -302,13 +342,49 @@ const CanvasPage = () => {
           onManualSave={handleManualSave}
         />
         {/* Add padding bottom on mobile for the bottom bar */}
-        <div className="flex-1 h-full md:pb-0 pb-24">
+        <div className="flex-1 h-full md:pb-0 pb-24 relative">
           <CanvasSurface
             projectData={projectData}
             onDataChange={handleProjectDataChange}
           />
+
+          {/* AI Analyze Button - Top Right */}
+          <button
+            onClick={handleAiAnalyze}
+            disabled={aiLoading}
+            className="absolute top-4 right-4 z-10 flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            {aiLoading ? (
+              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+            ) : (
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
+                />
+              </svg>
+            )}
+            {aiLoading ? "Analyzing..." : "AI Analyze"}
+          </button>
         </div>
       </div>
+
+      {/* AI Analysis Panel */}
+      {showAiPanel && (
+        <AiAnalysisPanel
+          analysis={aiAnalysis}
+          isLoading={aiLoading}
+          error={aiError}
+          onClose={() => setShowAiPanel(false)}
+        />
+      )}
 
       {/* Project Title Modal */}
       {showTitleModal && (
