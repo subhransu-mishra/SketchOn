@@ -170,7 +170,7 @@ const callAI = async (systemPrompt, userPrompt) => {
           "HTTP-Referer": "https://sketchon.app",
           "X-Title": "SketchOn AI Analyze",
         },
-        body: JSON.stringify({ model, max_tokens: 1800, messages }),
+        body: JSON.stringify({ model, max_tokens: 1500, messages }),
         signal: controller.signal,
       });
     } catch (fetchErr) {
@@ -225,7 +225,7 @@ const callAI = async (systemPrompt, userPrompt) => {
     );
     const message = await client.messages.create({
       model: "claude-3-7-sonnet-20250219",
-      max_tokens: 1800,
+      max_tokens: 1500,
       system: systemPrompt.trim(),
       messages: [{ role: "user", content: userPrompt.trim() }],
     });

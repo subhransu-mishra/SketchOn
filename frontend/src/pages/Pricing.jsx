@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FiCheck,
   FiStar,
@@ -15,6 +15,11 @@ import { TfiCrown } from "react-icons/tfi";
 
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
+  const [showDevPopup, setShowDevPopup] = useState(true);
+
+  useEffect(() => {
+    setShowDevPopup(true);
+  }, []);
 
   const plans = [
     {
@@ -101,6 +106,63 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white antialiased">
+      {/* Under Development Popup */}
+      <AnimatePresence>
+        {showDevPopup && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowDevPopup(false)}
+            />
+            {/* Modal */}
+            <motion.div
+              className="relative max-w-md w-full bg-neutral-900 border border-white/10 rounded-2xl p-8 shadow-2xl text-center"
+              initial={{ opacity: 0, scale: 0.85, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              {/* Icon */}
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/20">
+                <svg
+                  className="h-8 w-8 text-yellow-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-3">
+                Under Development
+              </h2>
+              <p className="text-white/60 text-sm leading-relaxed mb-6">
+                The Pricing page is currently under development. Plans and
+                payment options will be available soon. Stay tuned!
+              </p>
+              <motion.button
+                onClick={() => setShowDevPopup(false)}
+                className="w-full px-6 py-3 rounded-full bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 font-semibold hover:bg-yellow-500/30 transition-colors"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                Got it, continue browsing
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Header */}
       <header className="border-b border-white/5 bg-neutral-950/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
