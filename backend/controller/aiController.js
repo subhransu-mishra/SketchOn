@@ -1,151 +1,53 @@
-const SYSTEM_PROMPT = `You are a Senior Distributed Systems Architect with experience designing large-scale systems used by companies like Google, Netflix, and Amazon.
-
-Your task is to analyze a High Level Design (HLD) diagram of a software system.
-
-The diagram is represented as a structured topology containing components and their connections.
-
-Your goals are to evaluate the architecture from the perspective of:
-
-1. Scalability
-2. Reliability
-3. Fault tolerance
-4. Performance and latency
-5. Data consistency
-6. Availability
-7. Security
-8. Operational complexity
-
-Assume the system may need to scale to millions or hundreds of millions of users.`;
+// Compact system prompt to minimize input token usage
+const SYSTEM_PROMPT = `You are a Senior Distributed Systems Architect. Analyze the given HLD diagram and return ONLY valid JSON.`;
 
 const buildUserPrompt = (title, components, connections) => {
-  return `----------------------------
-SYSTEM DIAGRAM
-----------------------------
+  return `System: ${title}
+Components: ${components}
+Connections: ${connections}
 
-Title: ${title}
+Analyze and return ONLY this JSON (no markdown, no explanation outside JSON):
+{"architecture_summary":"","strengths":[],"bottlenecks":[],"missing_components":[],"scalability_improvements":[],"reliability_improvements":[],"performance_optimizations":[],"security_improvements":[],"interview_feedback":"","suggested_components":[{"component":"","reason":""}]}
 
-Components:
-${components}
-
-Connections:
-${connections}
-
-----------------------------
-ANALYSIS INSTRUCTIONS
-----------------------------
-
-Analyze the architecture and provide expert-level feedback.
-
-Specifically identify:
-
-1. Architecture Summary
-Explain in a few sentences what this system is doing and how traffic flows.
-
-2. Strengths
-Identify good architectural decisions made in the design.
-
-3. Bottlenecks
-Identify components that may become performance or scaling bottlenecks.
-
-4. Missing Components
-Identify important infrastructure or architectural components that are missing (for example: cache, queue, load balancer, CDN, replication, autoscaling, etc).
-
-5. Scalability Improvements
-Suggest ways to improve the system to support very large traffic.
-
-6. Reliability Improvements
-Suggest changes that improve fault tolerance, redundancy, and failure recovery.
-
-7. Performance Optimizations
-Suggest improvements to reduce latency or improve throughput.
-
-8. Security Improvements
-Highlight potential security improvements or best practices.
-
-9. Interview Feedback
-Provide constructive feedback as if reviewing this design in a system design interview.
-
-10. Suggested Components to Add
-List specific components that could be added to improve the design.
-
-----------------------------
-OUTPUT FORMAT
-----------------------------
-
-Return ONLY valid JSON in the following structure:
-
-{
-  "architecture_summary": "",
-  "strengths": [],
-  "bottlenecks": [],
-  "missing_components": [],
-  "scalability_improvements": [],
-  "reliability_improvements": [],
-  "performance_optimizations": [],
-  "security_improvements": [],
-  "interview_feedback": "",
-  "suggested_components": [
-    {
-      "component": "",
-      "reason": ""
-    }
-  ]
-}
-
-Important rules:
-- Be precise and practical.
-- Do not repeat the diagram text.
-- Focus on real distributed systems principles.
-- Assume large-scale production environments.
-- Avoid generic advice.`;
+Fill each field with concise, practical insights. Keep each array to 2-4 items max. Keep strings under 2 sentences.`;
 };
 
 const formatComponents = (nodes) => {
-  if (!nodes || nodes.length === 0) return "No components found.";
-
+  if (!nodes || nodes.length === 0) return "None";
   return nodes
-    .map((node, i) => {
+    .map((node) => {
       const label = node.data?.label || node.data?.name || "Unnamed";
       const type = node.type || "unknown";
-      const iconId = node.data?.iconId || "";
-      const icon = node.data?.icon || "";
-
-      let description = `${i + 1}. [${type.toUpperCase()}] ${label}`;
-      if (iconId) description += ` (icon: ${iconId})`;
-      if (icon && !iconId) description += ` (${icon})`;
-      return description;
+      return `${label}(${type})`;
     })
-    .join("\n");
+    .join(", ");
 };
 
 const formatConnections = (edges, nodes) => {
-  if (!edges || edges.length === 0) return "No connections found.";
-
+  if (!edges || edges.length === 0) return "None";
   const nodeMap = {};
   if (nodes) {
     nodes.forEach((node) => {
       nodeMap[node.id] = node.data?.label || node.data?.name || node.id;
     });
   }
-
   return edges
-    .map((edge, i) => {
+    .map((edge) => {
       const source = nodeMap[edge.source] || edge.source;
       const target = nodeMap[edge.target] || edge.target;
-      const label = edge.label ? ` [${edge.label}]` : "";
-      return `${i + 1}. ${source} -> ${target}${label}`;
+      return `${source}->${target}`;
     })
-    .join("\n");
+    .join(", ");
 };
 
-// Parse the affordable token count from a 402 error message.
-// e.g. "...but can only afford 1421."  → returns 1421
-const parseAffordableTokens = (errMsg) => {
-  const match = errMsg && errMsg.match(/can only afford (\d+)/i);
-  return match ? parseInt(match[1], 10) : null;
-};
+// Models to try in order: cheapest first
+const FALLBACK_MODELS = [
+  "google/gemini-2.0-flash-001",
+  "meta-llama/llama-3.1-8b-instruct:free",
+  "anthropic/claude-3.5-haiku",
+];
 
-// Perform a single OpenRouter fetch with a given max_tokens value.
+// Perform a single OpenRouter fetch
 const openRouterFetch = async (apiKey, model, messages, maxTokens) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -173,97 +75,107 @@ const openRouterFetch = async (apiKey, model, messages, maxTokens) => {
   return { response, rawBody };
 };
 
-// Call AI via OpenRouter (supports sk-or-v1- keys) or Anthropic directly (sk-ant- keys)
+// Call AI via OpenRouter with automatic model fallback on 402
 const callAI = async (systemPrompt, userPrompt) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
-  // Validate message content is non-empty before sending
   if (!systemPrompt || !userPrompt) {
     throw new Error("System prompt or user prompt is empty");
   }
 
   if (apiKey.startsWith("sk-or-")) {
-    const model = process.env.OPENROUTER_MODEL || "anthropic/claude-3.7-sonnet";
+    const configuredModel =
+      process.env.OPENROUTER_MODEL || "anthropic/claude-3.7-sonnet";
+
+    // Build model list: configured model first, then fallbacks
+    const modelsToTry = [
+      configuredModel,
+      ...FALLBACK_MODELS.filter((m) => m !== configuredModel),
+    ];
 
     const messages = [
       { role: "system", content: systemPrompt.trim() },
       { role: "user", content: userPrompt.trim() },
     ];
 
-    let maxTokens = 1200;
-    console.log(
-      `OpenRouter → trying model: ${model} with max_tokens: ${maxTokens}`,
-    );
+    let lastError = null;
 
-    let { response, rawBody } = await openRouterFetch(
-      apiKey,
-      model,
-      messages,
-      maxTokens,
-    );
+    for (const model of modelsToTry) {
+      const maxTokens = 1024;
+      console.log(
+        `OpenRouter → trying model: ${model} (max_tokens: ${maxTokens})`,
+      );
 
-    // If 402 (insufficient credits), auto-retry with the affordable amount
-    if (response.status === 402) {
-      let errJson = null;
       try {
-        errJson = JSON.parse(rawBody);
-      } catch (_) {}
-      const errMsg = errJson?.error?.message || errJson?.message || rawBody;
-
-      const affordable = parseAffordableTokens(errMsg);
-      if (affordable && affordable > 50) {
-        // Leave a 20% buffer for the prompt tokens
-        maxTokens = Math.floor(affordable * 0.8);
-        console.log(
-          `OpenRouter → 402 received, retrying with max_tokens: ${maxTokens}`,
-        );
-        ({ response, rawBody } = await openRouterFetch(
+        const { response, rawBody } = await openRouterFetch(
           apiKey,
           model,
           messages,
           maxTokens,
-        ));
+        );
+
+        // On 402, try next cheaper model
+        if (response.status === 402) {
+          console.warn(`OpenRouter → 402 on ${model}, trying next model...`);
+          lastError = new Error(`Credits exhausted for ${model}`);
+          lastError.status = 402;
+          continue;
+        }
+
+        if (!response.ok) {
+          let errJson = null;
+          try {
+            errJson = JSON.parse(rawBody);
+          } catch (_) {}
+          const errMsg = errJson?.error?.message || errJson?.message || rawBody;
+          console.error(
+            `OpenRouter ${response.status} for "${model}": ${errMsg}`,
+          );
+
+          // On rate limit or server errors, try next model
+          if (response.status === 429 || response.status >= 500) {
+            lastError = new Error(`AI API error ${response.status}: ${errMsg}`);
+            lastError.status = response.status;
+            continue;
+          }
+
+          const err = new Error(`AI API error ${response.status}: ${errMsg}`);
+          err.status = response.status;
+          throw err;
+        }
+
+        let data;
+        try {
+          data = JSON.parse(rawBody);
+        } catch (_) {
+          throw new Error("Invalid response format from AI service");
+        }
+
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) {
+          throw new Error("Empty response from AI service");
+        }
+
+        console.log(`OpenRouter → success with model: ${model}`);
+        return content;
+      } catch (fetchErr) {
+        // Network errors — try next model
+        if (fetchErr.message?.includes("Failed to connect")) {
+          lastError = fetchErr;
+          continue;
+        }
+        throw fetchErr;
       }
     }
 
-    if (!response.ok) {
-      let errJson = null;
-      try {
-        errJson = JSON.parse(rawBody);
-      } catch (_) {}
-
-      const errMsg = errJson?.error?.message || errJson?.message || rawBody;
-      console.error(
-        `OpenRouter ${response.status} for model "${model}": ${errMsg}`,
-      );
-
-      const err = new Error(`AI API error ${response.status}: ${errMsg}`);
-      err.status = response.status;
-      throw err;
-    }
-
-    let data;
-    try {
-      data = JSON.parse(rawBody);
-    } catch (_) {
-      throw new Error("Invalid response format from AI service");
-    }
-
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new Error("Empty response from AI service");
-    }
-
-    console.log(`OpenRouter → success with model: ${model}`);
-    return content;
+    // All models failed
+    if (lastError) throw lastError;
+    throw new Error("All AI models failed. Please try again later.");
   } else {
     // Native Anthropic SDK (sk-ant- keys)
     const Anthropic = require("@anthropic-ai/sdk");
     const client = new Anthropic({ apiKey });
 
-    console.log(
-      `Anthropic SDK → sending request to claude-3-7-sonnet-20250219`,
-    );
     const message = await client.messages.create({
       model: "claude-3-7-sonnet-20250219",
       max_tokens: 1500,
@@ -301,22 +213,43 @@ const analyzeDiagram = async (req, res) => {
 
     const responseText = await callAI(SYSTEM_PROMPT, userPrompt);
 
-    // Parse the JSON response
+    // Parse the JSON response — handle markdown-wrapped JSON too
     let analysis;
     try {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      // Strip markdown code fences if present
+      let cleaned = responseText.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/\s*```$/, "");
+      }
+
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         analysis = JSON.parse(jsonMatch[0]);
       } else {
         throw new Error("No JSON found in response");
       }
     } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", parseError);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to parse AI analysis response",
-        rawResponse: responseText,
-      });
+      console.error("Failed to parse AI response:", parseError.message);
+      console.error("Raw response:", responseText.substring(0, 500));
+
+      // Build a fallback analysis from the raw text
+      analysis = {
+        architecture_summary: responseText.substring(0, 300),
+        strengths: [
+          "AI returned non-JSON. See architecture summary for details.",
+        ],
+        bottlenecks: [],
+        missing_components: [],
+        scalability_improvements: [],
+        reliability_improvements: [],
+        performance_optimizations: [],
+        security_improvements: [],
+        interview_feedback:
+          "The AI response could not be fully parsed. This may be due to low token limits. Please try again.",
+        suggested_components: [],
+      };
     }
 
     return res.json({
@@ -336,14 +269,15 @@ const analyzeDiagram = async (req, res) => {
     if (error.status === 402) {
       return res.status(402).json({
         success: false,
-        message: error.message,
+        message:
+          "AI credits exhausted. All model fallbacks failed. Please add credits at openrouter.ai/settings/credits",
       });
     }
 
     if (error.status === 429) {
       return res.status(429).json({
         success: false,
-        message: error.message,
+        message: "Rate limited. Please wait a moment and try again.",
       });
     }
 
