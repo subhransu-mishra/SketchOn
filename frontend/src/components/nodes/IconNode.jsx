@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Handle, Position } from "reactflow";
+import { Handle, Position, NodeResizer } from "reactflow";
 import { IoImageOutline as ImageIcon } from "react-icons/io5";
 
 const IconNode = ({ id, data, selected }) => {
@@ -46,12 +46,21 @@ const IconNode = ({ id, data, selected }) => {
 
   return (
     <div
-      className={`flex flex-col items-center p-3 bg-neutral-800 rounded-xl min-w-22.5 max-w-30 shadow-lg transition-all ${
+      className={`flex flex-col items-center p-3 bg-neutral-800 rounded-xl shadow-lg transition-all ${
         selected
           ? "ring-2 ring-blue-500 border-blue-500/50"
           : "border border-white/20"
       }`}
+      style={{ width: "100%", height: "100%" }}
     >
+      <NodeResizer
+        isVisible={selected}
+        minWidth={110}
+        minHeight={140}
+        onResizeEnd={(event, params) =>
+          data.onResize?.(id, params.width, params.height)
+        }
+      />
       <Handle
         type="target"
         position={Position.Top}
@@ -60,14 +69,14 @@ const IconNode = ({ id, data, selected }) => {
       />
 
       {/* Icon Image */}
-      <div className="w-14 h-14 flex items-center justify-center mb-2 bg-neutral-700/50 rounded-lg p-2">
+      <div className="flex-1 w-full flex items-center justify-center mb-2 bg-neutral-700/50 rounded-lg p-2">
         {imageError ? (
           <ImageIcon className="w-10 h-10 text-white/30" />
         ) : (
           <img
             src={data.icon}
             alt={data.name || label}
-            className="w-full h-full object-contain pointer-events-none"
+            className="max-w-full max-h-full object-contain pointer-events-none"
             draggable={false}
             onError={() => setImageError(true)}
             loading="lazy"

@@ -17,6 +17,14 @@ import DiamondNode from "./nodes/DiamondNode";
 import TextNode from "./nodes/TextNode";
 import IconNode from "./nodes/IconNode";
 
+const DEFAULT_NODE_STYLES = {
+  rectangle: { width: 160, height: 90, color: "#2563eb" },
+  circle: { width: 120, height: 120, color: "#16a34a" },
+  diamond: { width: 100, height: 100, color: "#7c3aed" },
+  textNode: { width: 150, height: 70, color: "#262626" },
+  iconNode: { width: 150, height: 180 },
+};
+
 const nodeTypes = {
   rectangle: RectangleNode,
   circle: CircleNode,
@@ -42,16 +50,33 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
       isLoadingData.current = true;
 
       // Restore nodes with their original positions and data
-      const restoredNodes = projectData.nodes.map((node) => ({
-        ...node,
-        // Ensure position is preserved
-        position: node.position || { x: 0, y: 0 },
-        // Ensure data is preserved
-        data: {
-          ...node.data,
-          onLabelChange: onNodeLabelChange,
-        },
-      }));
+      const restoredNodes = projectData.nodes.map((node) => {
+        const defaults = DEFAULT_NODE_STYLES[node.type] || {};
+        const width = node.data?.width || defaults.width;
+        const height = node.data?.height || defaults.height;
+        const color = node.data?.color || defaults.color;
+
+        return {
+          ...node,
+          // Ensure position is preserved
+          position: node.position || { x: 0, y: 0 },
+          style: {
+            ...node.style,
+            ...(width ? { width } : {}),
+            ...(height ? { height } : {}),
+          },
+          // Ensure data is preserved
+          data: {
+            ...node.data,
+            ...(color ? { color } : {}),
+            ...(width ? { width } : {}),
+            ...(height ? { height } : {}),
+            onLabelChange: onNodeLabelChange,
+            onColorChange: onNodeColorChange,
+            onResize: onNodeResize,
+          },
+        };
+      });
 
       setNodes(restoredNodes);
       setEdges(projectData.edges);
@@ -81,6 +106,8 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
         data: {
           ...node.data,
           onLabelChange: undefined, // Remove function reference
+          onColorChange: undefined,
+          onResize: undefined,
         },
       }));
       onDataChange(cleanNodes, edges);
@@ -113,6 +140,32 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
         nds.map((node) =>
           node.id === nodeId
             ? { ...node, data: { ...node.data, label: newLabel } }
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const onNodeColorChange = useCallback(
+    (nodeId, newColor) => {
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, color: newColor } }
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const onNodeResize = useCallback(
+    (nodeId, width, height) => {
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, width, height } }
             : node,
         ),
       );
@@ -175,18 +228,26 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
         // Handle icon node with icon data
         try {
           const iconData = JSON.parse(iconDataStr);
+          const defaults = DEFAULT_NODE_STYLES.iconNode;
           newNode = {
             id: getId(),
             type: "iconNode",
             position,
             draggable: true,
             selectable: true,
+            style: {
+              width: defaults.width,
+              height: defaults.height,
+            },
             data: {
               label: iconData.name,
               name: iconData.name,
               icon: iconData.icon,
               iconId: iconData.id,
               onLabelChange: onNodeLabelChange,
+              onResize: onNodeResize,
+              width: defaults.width,
+              height: defaults.height,
             },
           };
         } catch (e) {
@@ -202,22 +263,38 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
           textNode: "Text",
         };
 
+        const defaults = DEFAULT_NODE_STYLES[type] || {};
         newNode = {
           id: getId(),
           type,
           position,
           draggable: true,
           selectable: true,
+          style: {
+            ...(defaults.width ? { width: defaults.width } : {}),
+            ...(defaults.height ? { height: defaults.height } : {}),
+          },
           data: {
             label: labelMap[type] || type,
             onLabelChange: onNodeLabelChange,
+            onColorChange: onNodeColorChange,
+            onResize: onNodeResize,
+            ...(defaults.color ? { color: defaults.color } : {}),
+            ...(defaults.width ? { width: defaults.width } : {}),
+            ...(defaults.height ? { height: defaults.height } : {}),
           },
         };
       }
 
       setNodes((nds) => [...nds, newNode]);
     },
-    [setNodes, onNodeLabelChange, screenToFlowPosition],
+    [
+      setNodes,
+      onNodeLabelChange,
+      onNodeColorChange,
+      onNodeResize,
+      screenToFlowPosition,
+    ],
   );
 
   const onDragOver = useCallback((event) => {
@@ -246,18 +323,26 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
       if (!iconData) return;
 
       // Add icon at center of the visible viewport
+      const defaults = DEFAULT_NODE_STYLES.iconNode;
       const newNode = {
         id: getId(),
         type: "iconNode",
         position: { x: 250, y: 150 },
         draggable: true,
         selectable: true,
+        style: {
+          width: defaults.width,
+          height: defaults.height,
+        },
         data: {
           label: iconData.name,
           name: iconData.name,
           icon: iconData.icon,
           iconId: iconData.id,
           onLabelChange: onNodeLabelChange,
+          onResize: onNodeResize,
+          width: defaults.width,
+          height: defaults.height,
         },
       };
 
@@ -268,14 +353,24 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
     return () => {
       window.removeEventListener("addIconToCanvas", handleAddIconToCanvas);
     };
-  }, [setNodes, onNodeLabelChange]);
+  }, [setNodes, onNodeLabelChange, onNodeResize]);
 
   return (
     <div className="flex-1 h-full" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes.map((node) => ({
           ...node,
-          data: { ...node.data, onLabelChange: onNodeLabelChange },
+          style: {
+            ...node.style,
+            ...(node.data?.width ? { width: node.data.width } : {}),
+            ...(node.data?.height ? { height: node.data.height } : {}),
+          },
+          data: {
+            ...node.data,
+            onLabelChange: onNodeLabelChange,
+            onColorChange: onNodeColorChange,
+            onResize: onNodeResize,
+          },
         }))}
         edges={edges}
         onNodesChange={handleNodesChange}

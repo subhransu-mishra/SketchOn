@@ -261,20 +261,34 @@ export const ICONS = [
     category: "cloud",
     icon: "/icons/s3.png",
   },
-{
+  {
     id: "server",
-    name: "server",
-    keywords: ["server", "backend", "scaling", "ec2","cloud"],
+    name: "Server",
+    keywords: ["server", "backend", "scaling", "ec2", "cloud"],
     category: "server",
     icon: "/icons/server.png",
-},
-{
-    id: "server",
-    name: "server 2",
-    keywords: ["server", "backend", "scaling", "ec2","cloud"],
+  },
+  {
+    id: "server2",
+    name: "Server 2",
+    keywords: ["server", "backend", "scaling", "ec2", "cloud"],
     category: "server",
     icon: "/icons/server2.png",
-},
+  },
+  {
+    id: "gmail",
+    name: "Gmail",
+    keywords: ["gmail", "email", "mail", "google", "inbox"],
+    category: "general",
+    icon: "/icons/gmail.png",
+  },
+  {
+    id: "sns",
+    name: "SNS",
+    keywords: ["sns", "aws", "notification", "pubsub", "messaging"],
+    category: "cloud",
+    icon: "/icons/SNS.png",
+  },
   {
     id: "vmware",
     name: "VMware",

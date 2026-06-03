@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Handle, Position } from "reactflow";
+import { Handle, Position, NodeResizer, NodeToolbar } from "reactflow";
+import { NODE_COLORS } from "./nodeColors";
 
-const RectangleNode = ({ id, data }) => {
+const RectangleNode = ({ id, data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label);
   const inputRef = useRef();
+  const nodeColor = data.color || "#2563eb";
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -34,9 +36,49 @@ const RectangleNode = ({ id, data }) => {
   };
 
   return (
-    <div className="px-4 py-3 bg-blue-600 border border-blue-500 rounded-lg text-white text-sm font-medium min-w-[120px] text-center">
+    <div
+      className="rounded-lg text-white text-sm font-medium text-center border"
+      style={{
+        width: "100%",
+        height: "100%",
+        backgroundColor: nodeColor,
+        borderColor: "rgba(255,255,255,0.25)",
+      }}
+    >
+      <NodeResizer
+        isVisible={selected}
+        minWidth={120}
+        minHeight={70}
+        onResizeEnd={(event, params) =>
+          data.onResize?.(id, params.width, params.height)
+        }
+      />
+      <NodeToolbar isVisible={selected} position={Position.Top} align="center">
+        <div className="flex items-center gap-2 bg-neutral-900/95 border border-white/10 rounded-lg px-2 py-1">
+          {NODE_COLORS.map((color) => (
+            <button
+              key={color}
+              type="button"
+              className={`h-5 w-5 rounded-full border transition-transform ${
+                nodeColor === color
+                  ? "border-white scale-110"
+                  : "border-white/20 hover:scale-105"
+              }`}
+              style={{ backgroundColor: color }}
+              onClick={(event) => {
+                event.stopPropagation();
+                data.onColorChange?.(id, color);
+              }}
+              aria-label={`Set color ${color}`}
+            />
+          ))}
+        </div>
+      </NodeToolbar>
       <Handle type="target" position={Position.Top} className="w-3 h-3" />
-      <div onDoubleClick={handleDoubleClick}>
+      <div
+        className="flex items-center justify-center h-full px-3"
+        onDoubleClick={handleDoubleClick}
+      >
         {isEditing ? (
           <input
             ref={inputRef}
@@ -44,7 +86,7 @@ const RectangleNode = ({ id, data }) => {
             onChange={(e) => setLabel(e.target.value)}
             onBlur={handleSubmit}
             onKeyDown={handleKeyDown}
-            className="bg-transparent border-none outline-none text-center w-full text-white placeholder-blue-200"
+            className="bg-transparent border-none outline-none text-center w-full text-white placeholder-white/70"
             placeholder="Enter text..."
           />
         ) : (

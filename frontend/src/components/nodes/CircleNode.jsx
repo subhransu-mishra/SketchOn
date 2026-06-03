@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Handle, Position } from "reactflow";
+import { Handle, Position, NodeResizer, NodeToolbar } from "reactflow";
+import { NODE_COLORS } from "./nodeColors";
 
-const CircleNode = ({ id, data }) => {
+const CircleNode = ({ id, data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label);
   const inputRef = useRef();
+  const nodeColor = data.color || "#16a34a";
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -34,7 +36,45 @@ const CircleNode = ({ id, data }) => {
   };
 
   return (
-    <div className="w-24 h-24 bg-green-600 border border-green-500 rounded-full text-white text-xs font-medium flex items-center justify-center">
+    <div
+      className="rounded-full text-white text-xs font-medium flex items-center justify-center border"
+      style={{
+        width: "100%",
+        height: "100%",
+        backgroundColor: nodeColor,
+        borderColor: "rgba(255,255,255,0.25)",
+      }}
+    >
+      <NodeResizer
+        isVisible={selected}
+        keepAspectRatio={true}
+        minWidth={80}
+        minHeight={80}
+        onResizeEnd={(event, params) =>
+          data.onResize?.(id, params.width, params.height)
+        }
+      />
+      <NodeToolbar isVisible={selected} position={Position.Top} align="center">
+        <div className="flex items-center gap-2 bg-neutral-900/95 border border-white/10 rounded-lg px-2 py-1">
+          {NODE_COLORS.map((color) => (
+            <button
+              key={color}
+              type="button"
+              className={`h-5 w-5 rounded-full border transition-transform ${
+                nodeColor === color
+                  ? "border-white scale-110"
+                  : "border-white/20 hover:scale-105"
+              }`}
+              style={{ backgroundColor: color }}
+              onClick={(event) => {
+                event.stopPropagation();
+                data.onColorChange?.(id, color);
+              }}
+              aria-label={`Set color ${color}`}
+            />
+          ))}
+        </div>
+      </NodeToolbar>
       <Handle type="target" position={Position.Top} className="w-3 h-3" />
       <div className="text-center" onDoubleClick={handleDoubleClick}>
         {isEditing ? (
