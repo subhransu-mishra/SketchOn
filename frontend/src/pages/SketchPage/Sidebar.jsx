@@ -134,7 +134,7 @@ const DesktopSidebar = React.forwardRef(
 
               <button
                 onClick={onShare}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                className="w-full flex items-center   justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
                 title="Share project public link"
               >
                 <ShareIcon className="h-4 w-4" />
@@ -389,9 +389,9 @@ const MobileBottomBar = ({
             {/* Share Button */}
             <button
               onClick={onShare}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+              className="w-full cursor-pointer flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
             >
-              <ShareIcon className="h-4 w-4" />
+              <ShareIcon className="h-4 w-4 cursor-pointer" />
               <span>Share Project</span>
             </button>
             <Link

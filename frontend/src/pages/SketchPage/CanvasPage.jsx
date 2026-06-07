@@ -10,6 +10,7 @@ import CanvasSurface from "../../components/CanvasSurface";
 import AiAnalysisPanel from "../../components/AiAnalysisPanel";
 import { useDiagramService } from "../../services/diagramService";
 import { loadingManager } from "../../services/apiUtils";
+import { toast } from "react-toastify";
 
 const CanvasPage = () => {
   const { isSignedIn, user } = useUser();
@@ -268,10 +269,10 @@ const CanvasPage = () => {
       await diagramService.shareDiagram(currentProject.id);
       const shareUrl = `${window.location.origin}/share/${currentProject.id}`;
       await navigator.clipboard.writeText(shareUrl);
-      alert(`Project successfully shared!\n\nPublic read-only link has been copied to your clipboard:\n${shareUrl}`);
+      toast.success("Link copied to clipboard!");
     } catch (err) {
       console.error("Error sharing project:", err);
-      alert("Failed to share project: " + (err.message || "Unknown error"));
+      toast.error("Failed to share project: " + (err.message || "Unknown error"));
     }
   };
 

@@ -5,6 +5,8 @@ import HowToUse from "./pages/HowToUse";
 import Dashboard from "./pages/Dashboard";
 import CanvasPage from "./pages/SketchPage/CanvasPage";
 import SharePage from "./pages/SharePage";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   return (
@@ -19,6 +21,7 @@ function App() {
         {/* Catch-all: redirect unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ToastContainer position="top-center" theme="dark" autoClose={3000} />
     </BrowserRouter>
   );
 }
