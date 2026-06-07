@@ -257,6 +257,24 @@ const CanvasPage = () => {
     }
   };
 
+  // Share project handler
+  const handleShare = async () => {
+    if (!currentProject || !currentProject.id) {
+      console.warn("No current project to share");
+      return;
+    }
+
+    try {
+      await diagramService.shareDiagram(currentProject.id);
+      const shareUrl = `${window.location.origin}/share/${currentProject.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      alert(`Project successfully shared!\n\nPublic read-only link has been copied to your clipboard:\n${shareUrl}`);
+    } catch (err) {
+      console.error("Error sharing project:", err);
+      alert("Failed to share project: " + (err.message || "Unknown error"));
+    }
+  };
+
   // AI Analysis handler
   const handleAiAnalyze = async () => {
     if (!projectData.nodes || projectData.nodes.length === 0) {
@@ -340,6 +358,7 @@ const CanvasPage = () => {
           currentProject={currentProject}
           saveStatus={saveStatus}
           onManualSave={handleManualSave}
+          onShare={handleShare}
         />
         {/* Add padding bottom on mobile for the bottom bar */}
         <div className="flex-1 h-full md:pb-0 pb-24 relative">

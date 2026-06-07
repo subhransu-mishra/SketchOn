@@ -4,6 +4,7 @@ import Pricing from "./pages/Pricing";
 import HowToUse from "./pages/HowToUse";
 import Dashboard from "./pages/Dashboard";
 import CanvasPage from "./pages/SketchPage/CanvasPage";
+import SharePage from "./pages/SharePage";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/how-to-use" element={<HowToUse />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/canvas" element={<CanvasPage />} />
+        <Route path="/share/:projectId" element={<SharePage />} />
         {/* Catch-all: redirect unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

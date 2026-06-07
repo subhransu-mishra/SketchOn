@@ -16,6 +16,7 @@ const RectangleNode = ({ id, data, selected }) => {
   }, [isEditing]);
 
   const handleDoubleClick = () => {
+    if (data.readOnly) return;
     setIsEditing(true);
   };
 
@@ -45,36 +46,40 @@ const RectangleNode = ({ id, data, selected }) => {
         borderColor: "rgba(255,255,255,0.25)",
       }}
     >
-      <NodeResizer
-        isVisible={selected}
-        minWidth={120}
-        minHeight={70}
-        onResizeEnd={(event, params) =>
-          data.onResize?.(id, params.width, params.height)
-        }
-      />
-      <NodeToolbar isVisible={selected} position={Position.Top} align="center">
-        <div className="flex items-center gap-2 bg-neutral-900/95 border border-white/10 rounded-lg px-2 py-1">
-          {NODE_COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`h-5 w-5 rounded-full border transition-transform ${
-                nodeColor === color
-                  ? "border-white scale-110"
-                  : "border-white/20 hover:scale-105"
-              }`}
-              style={{ backgroundColor: color }}
-              onClick={(event) => {
-                event.stopPropagation();
-                data.onColorChange?.(id, color);
-              }}
-              aria-label={`Set color ${color}`}
-            />
-          ))}
-        </div>
-      </NodeToolbar>
-      <Handle type="target" position={Position.Top} className="w-3 h-3" />
+      {!data.readOnly && (
+        <NodeResizer
+          isVisible={selected}
+          minWidth={120}
+          minHeight={70}
+          onResizeEnd={(event, params) =>
+            data.onResize?.(id, params.width, params.height)
+          }
+        />
+      )}
+      {!data.readOnly && (
+        <NodeToolbar isVisible={selected} position={Position.Top} align="center">
+          <div className="flex items-center gap-2 bg-neutral-900/95 border border-white/10 rounded-lg px-2 py-1">
+            {NODE_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                className={`h-5 w-5 rounded-full border transition-transform ${
+                  nodeColor === color
+                    ? "border-white scale-110"
+                    : "border-white/20 hover:scale-105"
+                }`}
+                style={{ backgroundColor: color }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  data.onColorChange?.(id, color);
+                }}
+                aria-label={`Set color ${color}`}
+              />
+            ))}
+          </div>
+        </NodeToolbar>
+      )}
+      {!data.readOnly && <Handle type="target" position={Position.Top} className="w-3 h-3" />}
       <div
         className="flex items-center justify-center h-full px-3"
         onDoubleClick={handleDoubleClick}
@@ -93,7 +98,7 @@ const RectangleNode = ({ id, data, selected }) => {
           <div className="cursor-pointer">{label}</div>
         )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
+      {!data.readOnly && <Handle type="source" position={Position.Bottom} className="w-3 h-3" />}
     </div>
   );
 };

@@ -41,6 +41,10 @@ const diagramSchema = new mongoose.Schema(
     },
     nodes: [nodeSchema],
     edges: [edgeSchema],
+    isShared: {
+      type: Boolean,
+      default: false,
+    },
     metadata: {
       type: mongoose.Schema.Types.Mixed,
       default: {},

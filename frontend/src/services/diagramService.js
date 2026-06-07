@@ -164,6 +164,63 @@ class DiagramService {
     }
   }
 
+  // Get a single diagram by ID (public access, no auth required)
+  async getPublicDiagram(diagramId) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/diagrams/public/${diagramId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      return await this.parseResponse(response, "getPublicDiagram");
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error("Request timed out. Please try again.");
+      }
+      throw error;
+    }
+  }
+
+  // Share a diagram (requires auth)
+  async shareDiagram(diagramId) {
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
+
+    const token = await this.getAuthToken();
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}/share`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      return await this.parseResponse(response, "shareDiagram");
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error("Request timed out. Please try again.");
+      }
+      throw error;
+    }
+  }
+
   // Create a new diagram
   async createDiagram(diagramData) {
     if (!this.getAuthToken) {

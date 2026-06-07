@@ -302,3 +302,82 @@ exports.deleteDiagram = async (req, res) => {
     });
   }
 };
+
+// Get a public shared diagram
+exports.getPublicDiagram = async (req, res) => {
+  try {
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: "Diagram not found",
+      });
+    }
+
+    const diagram = await diagramSchema.findOne({
+      _id: req.params.id,
+      isShared: true,
+    });
+
+    if (!diagram) {
+      return res.status(404).json({
+        success: false,
+        message: "Diagram not found or not shared publicly",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: diagram,
+    });
+  } catch (error) {
+    console.error("Get public diagram error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch diagram",
+      error: error.message,
+    });
+  }
+};
+
+// Share a diagram
+exports.shareDiagram = async (req, res) => {
+  try {
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid diagram ID format",
+      });
+    }
+
+    // Ensure only the owner can share their diagram
+    const diagram = await diagramSchema.findOne({
+      _id: req.params.id,
+      clerkUserId: req.clerkUserId,
+    });
+
+    if (!diagram) {
+      return res.status(404).json({
+        success: false,
+        message: "Diagram not found or you don't have access to it",
+      });
+    }
+
+    diagram.isShared = true;
+    const savedDiagram = await diagram.save();
+
+    res.json({
+      success: true,
+      data: savedDiagram,
+      message: "Diagram shared successfully",
+    });
+  } catch (error) {
+    console.error("Share diagram error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to share diagram",
+      error: error.message,
+    });
+  }
+};

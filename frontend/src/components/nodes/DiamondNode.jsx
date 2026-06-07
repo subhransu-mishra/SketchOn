@@ -16,6 +16,7 @@ const DiamondNode = ({ id, data, selected }) => {
   }, [isEditing]);
 
   const handleDoubleClick = () => {
+    if (data.readOnly) return;
     setIsEditing(true);
   };
 
@@ -37,37 +38,41 @@ const DiamondNode = ({ id, data, selected }) => {
 
   return (
     <div className="relative">
-      <NodeResizer
-        isVisible={selected}
-        keepAspectRatio={true}
-        minWidth={70}
-        minHeight={70}
-        onResizeEnd={(event, params) =>
-          data.onResize?.(id, params.width, params.height)
-        }
-      />
-      <NodeToolbar isVisible={selected} position={Position.Top} align="center">
-        <div className="flex items-center gap-2 bg-neutral-900/95 border border-white/10 rounded-lg px-2 py-1">
-          {NODE_COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`h-5 w-5 rounded-full border transition-transform ${
-                nodeColor === color
-                  ? "border-white scale-110"
-                  : "border-white/20 hover:scale-105"
-              }`}
-              style={{ backgroundColor: color }}
-              onClick={(event) => {
-                event.stopPropagation();
-                data.onColorChange?.(id, color);
-              }}
-              aria-label={`Set color ${color}`}
-            />
-          ))}
-        </div>
-      </NodeToolbar>
-      <Handle type="target" position={Position.Top} className="w-3 h-3 z-10" />
+      {!data.readOnly && (
+        <NodeResizer
+          isVisible={selected}
+          keepAspectRatio={true}
+          minWidth={70}
+          minHeight={70}
+          onResizeEnd={(event, params) =>
+            data.onResize?.(id, params.width, params.height)
+          }
+        />
+      )}
+      {!data.readOnly && (
+        <NodeToolbar isVisible={selected} position={Position.Top} align="center">
+          <div className="flex items-center gap-2 bg-neutral-900/95 border border-white/10 rounded-lg px-2 py-1">
+            {NODE_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                className={`h-5 w-5 rounded-full border transition-transform ${
+                  nodeColor === color
+                    ? "border-white scale-110"
+                    : "border-white/20 hover:scale-105"
+                }`}
+                style={{ backgroundColor: color }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  data.onColorChange?.(id, color);
+                }}
+                aria-label={`Set color ${color}`}
+              />
+            ))}
+          </div>
+        </NodeToolbar>
+      )}
+      {!data.readOnly && <Handle type="target" position={Position.Top} className="w-3 h-3 z-10" />}
       <div
         className="transform rotate-45 flex items-center justify-center border"
         style={{
@@ -96,11 +101,13 @@ const DiamondNode = ({ id, data, selected }) => {
           )}
         </div>
       </div>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-3 h-3 z-10"
-      />
+      {!data.readOnly && (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-3 h-3 z-10"
+        />
+      )}
     </div>
   );
 };

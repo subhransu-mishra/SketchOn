@@ -24,6 +24,7 @@ const IconNode = ({ id, data, selected }) => {
 
   const handleDoubleClick = (e) => {
     e.stopPropagation();
+    if (data.readOnly) return;
     setIsEditing(true);
   };
 
@@ -53,20 +54,24 @@ const IconNode = ({ id, data, selected }) => {
       }`}
       style={{ width: "100%", height: "100%" }}
     >
-      <NodeResizer
-        isVisible={selected}
-        minWidth={110}
-        minHeight={140}
-        onResizeEnd={(event, params) =>
-          data.onResize?.(id, params.width, params.height)
-        }
-      />
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="w-3! h-3! bg-blue-500! border-2! border-neutral-800!"
-        style={{ top: -6 }}
-      />
+      {!data.readOnly && (
+        <NodeResizer
+          isVisible={selected}
+          minWidth={110}
+          minHeight={140}
+          onResizeEnd={(event, params) =>
+            data.onResize?.(id, params.width, params.height)
+          }
+        />
+      )}
+      {!data.readOnly && (
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="w-3! h-3! bg-blue-500! border-2! border-neutral-800!"
+          style={{ top: -6 }}
+        />
+      )}
 
       {/* Icon Image */}
       <div className="flex-1 w-full flex items-center justify-center mb-2 bg-neutral-700/50 rounded-lg p-2">
@@ -110,28 +115,34 @@ const IconNode = ({ id, data, selected }) => {
         )}
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-3! h-3! bg-blue-500! border-2! border-neutral-800!"
-        style={{ bottom: -6 }}
-      />
+      {!data.readOnly && (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-3! h-3! bg-blue-500! border-2! border-neutral-800!"
+          style={{ bottom: -6 }}
+        />
+      )}
 
       {/* Left and Right handles for more connection options */}
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="left"
-        className="w-3! h-3! bg-green-500! border-2! border-neutral-800!"
-        style={{ left: -6 }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        className="w-3! h-3! bg-green-500! border-2! border-neutral-800!"
-        style={{ right: -6 }}
-      />
+      {!data.readOnly && (
+        <Handle
+          type="source"
+          position={Position.Left}
+          id="left"
+          className="w-3! h-3! bg-green-500! border-2! border-neutral-800!"
+          style={{ left: -6 }}
+        />
+      )}
+      {!data.readOnly && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="right"
+          className="w-3! h-3! bg-green-500! border-2! border-neutral-800!"
+          style={{ right: -6 }}
+        />
+      )}
     </div>
   );
 };

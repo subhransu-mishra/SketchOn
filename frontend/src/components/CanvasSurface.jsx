@@ -36,7 +36,7 @@ const nodeTypes = {
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-const CanvasFlow = ({ projectData, onDataChange }) => {
+const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const isLoadingData = useRef(false);
@@ -367,20 +367,21 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
           },
           data: {
             ...node.data,
+            readOnly,
             onLabelChange: onNodeLabelChange,
             onColorChange: onNodeColorChange,
             onResize: onNodeResize,
           },
         }))}
         edges={edges}
-        onNodesChange={handleNodesChange}
-        onEdgesChange={handleEdgesChange}
-        onConnect={onConnect}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onNodeDragStart={onNodeDragStart}
-        onNodeDrag={onNodeDrag}
-        onNodeDragStop={onNodeDragStop}
+        onNodesChange={readOnly ? undefined : handleNodesChange}
+        onEdgesChange={readOnly ? undefined : handleEdgesChange}
+        onConnect={readOnly ? undefined : onConnect}
+        onDrop={readOnly ? undefined : onDrop}
+        onDragOver={readOnly ? undefined : onDragOver}
+        onNodeDragStart={readOnly ? undefined : onNodeDragStart}
+        onNodeDrag={readOnly ? undefined : onNodeDrag}
+        onNodeDragStop={readOnly ? undefined : onNodeDragStop}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         snapToGrid={true}
@@ -388,14 +389,14 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
         fitView
         fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
         className="bg-neutral-950"
-        deleteKeyCode={["Backspace", "Delete"]}
-        selectionKeyCode={["Shift"]}
-        multiSelectionKeyCode={["Meta", "Ctrl"]}
-        panOnDrag={[1, 2]} // Only pan with middle mouse or right click
+        deleteKeyCode={readOnly ? null : ["Backspace", "Delete"]}
+        selectionKeyCode={readOnly ? null : ["Shift"]}
+        multiSelectionKeyCode={readOnly ? null : ["Meta", "Ctrl"]}
+        panOnDrag={readOnly ? true : [1, 2]} // In readOnly, pan with left click drag
         selectNodesOnDrag={false}
-        nodesDraggable={true}
-        nodesConnectable={true}
-        elementsSelectable={true}
+        nodesDraggable={!readOnly}
+        nodesConnectable={!readOnly}
+        elementsSelectable={!readOnly}
         autoPanOnConnect={false}
         autoPanOnNodeDrag={false}
         connectOnClick={false}
@@ -412,10 +413,10 @@ const CanvasFlow = ({ projectData, onDataChange }) => {
 };
 
 // Wrap with ReactFlowProvider for screenToFlowPosition to work
-const CanvasSurface = ({ projectData, onDataChange }) => {
+const CanvasSurface = ({ projectData, onDataChange, readOnly }) => {
   return (
     <ReactFlowProvider>
-      <CanvasFlow projectData={projectData} onDataChange={onDataChange} />
+      <CanvasFlow projectData={projectData} onDataChange={onDataChange} readOnly={readOnly} />
     </ReactFlowProvider>
   );
 };

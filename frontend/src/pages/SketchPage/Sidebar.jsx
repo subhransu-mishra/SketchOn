@@ -20,6 +20,7 @@ import {
   IoMenuOutline as MenuIcon,
   IoChevronDownOutline as ChevronDownIcon,
   IoChevronUpOutline as ChevronUpIcon,
+  IoShareOutline as ShareIcon,
 } from "react-icons/io5";
 import { ICONS, searchIcons } from "../../data/icons";
 
@@ -42,6 +43,7 @@ const DesktopSidebar = React.forwardRef(
       currentProject,
       saveStatus,
       onManualSave,
+      onShare,
       iconSearchQuery,
       setIconSearchQuery,
       symbols,
@@ -96,36 +98,47 @@ const DesktopSidebar = React.forwardRef(
               </span>
             </div>
 
-            {/* Save Status and Button */}
-            <div className="flex items-center justify-between pt-2">
-              {statusInfo && (
-                <div
-                  className={`flex items-center gap-2 text-xs ${statusInfo.color}`}
+            {/* Save Status and Buttons */}
+            <div className="flex flex-col gap-2 pt-2">
+              <div className="flex items-center justify-between">
+                {statusInfo && (
+                  <div
+                    className={`flex items-center gap-2 text-xs ${statusInfo.color}`}
+                  >
+                    {statusInfo.icon}
+                    <span>{statusInfo.text}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={onManualSave}
+                  disabled={saveStatus === "saving" || saveStatus === "saved"}
+                  className={`
+                    flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors
+                    ${
+                      saveStatus === "unsaved"
+                        ? "bg-blue-600 hover:bg-blue-700 text-white"
+                        : "bg-neutral-700 text-white/60 cursor-not-allowed"
+                    }
+                  `}
+                  title={
+                    saveStatus === "saved"
+                      ? "All changes saved"
+                      : "Save changes manually"
+                  }
                 >
-                  {statusInfo.icon}
-                  <span>{statusInfo.text}</span>
-                </div>
-              )}
+                  <SaveIcon className="h-4 w-4" />
+                  Save
+                </button>
+              </div>
 
               <button
-                onClick={onManualSave}
-                disabled={saveStatus === "saving" || saveStatus === "saved"}
-                className={`
-                  flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors
-                  ${
-                    saveStatus === "unsaved"
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "bg-neutral-700 text-white/60 cursor-not-allowed"
-                  }
-                `}
-                title={
-                  saveStatus === "saved"
-                    ? "All changes saved"
-                    : "Save changes manually"
-                }
+                onClick={onShare}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                title="Share project public link"
               >
-                <SaveIcon className="h-4 w-4" />
-                Save
+                <ShareIcon className="h-4 w-4" />
+                Share Project
               </button>
             </div>
           </div>
@@ -240,6 +253,7 @@ const MobileBottomBar = ({
   currentProject,
   saveStatus,
   onManualSave,
+  onShare,
   iconSearchQuery,
   setIconSearchQuery,
   symbols,
@@ -372,6 +386,14 @@ const MobileBottomBar = ({
               {statusInfo?.icon}
               <span>{statusInfo?.text || "Saved"}</span>
             </button>
+            {/* Share Button */}
+            <button
+              onClick={onShare}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+            >
+              <ShareIcon className="h-4 w-4" />
+              <span>Share Project</span>
+            </button>
             <Link
               to="/dashboard"
               className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-white/70 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors"
@@ -461,7 +483,7 @@ const MobileBottomBar = ({
   </div>
 );
 
-const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
+const Sidebar = ({ currentProject, saveStatus, onManualSave, onShare }) => {
   const [iconSearchQuery, setIconSearchQuery] = useState("");
   const [mobileTab, setMobileTab] = useState("shapes"); // 'shapes', 'icons', 'info'
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
@@ -564,6 +586,7 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
         currentProject={currentProject}
         saveStatus={saveStatus}
         onManualSave={onManualSave}
+        onShare={onShare}
         iconSearchQuery={iconSearchQuery}
         setIconSearchQuery={setIconSearchQuery}
         symbols={symbols}
@@ -578,6 +601,7 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave }) => {
         currentProject={currentProject}
         saveStatus={saveStatus}
         onManualSave={onManualSave}
+        onShare={onShare}
         iconSearchQuery={iconSearchQuery}
         setIconSearchQuery={setIconSearchQuery}
         symbols={symbols}
