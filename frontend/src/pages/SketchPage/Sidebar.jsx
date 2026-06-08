@@ -23,6 +23,7 @@ import {
   IoShareOutline as ShareIcon,
 } from "react-icons/io5";
 import { ICONS, searchIcons } from "../../data/icons";
+import StarBorder from "../../components/StarBorder";
 
 const MIN_SIDEBAR_WIDTH = 220;
 const MAX_SIDEBAR_WIDTH = 420;
@@ -132,14 +133,18 @@ const DesktopSidebar = React.forwardRef(
                 </button>
               </div>
 
-              <button
+              <StarBorder
                 onClick={onShare}
-                className="w-full flex items-center   justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                color="#e9d5ff"
+                speed="4s"
+                thickness={2}
+                className="w-full rounded-lg"
+                innerClassName="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-[7px] bg-purple-600 hover:bg-purple-700 text-white transition-colors"
                 title="Share project public link"
               >
                 <ShareIcon className="h-4 w-4" />
                 Share Project
-              </button>
+              </StarBorder>
             </div>
           </div>
         )}
@@ -387,13 +392,17 @@ const MobileBottomBar = ({
               <span>{statusInfo?.text || "Saved"}</span>
             </button>
             {/* Share Button */}
-            <button
+            <StarBorder
               onClick={onShare}
-              className="w-full cursor-pointer flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+              color="#e9d5ff"
+              speed="4s"
+              thickness={2}
+              className="w-full rounded-lg"
+              innerClassName="w-full cursor-pointer flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-[7px] bg-purple-600 hover:bg-purple-700 text-white transition-colors"
             >
               <ShareIcon className="h-4 w-4 cursor-pointer" />
               <span>Share Project</span>
-            </button>
+            </StarBorder>
             <Link
               to="/dashboard"
               className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-white/70 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors"

@@ -8,6 +8,7 @@ import {
 import Sidebar from "./Sidebar";
 import CanvasSurface from "../../components/CanvasSurface";
 import AiAnalysisPanel from "../../components/AiAnalysisPanel";
+import StarBorder from "../../components/StarBorder";
 import { useDiagramService } from "../../services/diagramService";
 import { loadingManager } from "../../services/apiUtils";
 import { toast } from "react-toastify";
@@ -369,10 +370,14 @@ const CanvasPage = () => {
           />
 
           {/* AI Analyze Button - Top Right */}
-          <button
+          <StarBorder
             onClick={handleAiAnalyze}
             disabled={aiLoading}
-            className="absolute top-4 right-4 z-10 flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+            color="#e9d5ff"
+            speed="4s"
+            thickness={2}
+            className="absolute top-4 right-4 z-10 rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+            innerClassName="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 rounded-[7px] flex items-center gap-2"
           >
             {aiLoading ? (
               <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
@@ -392,7 +397,7 @@ const CanvasPage = () => {
               </svg>
             )}
             {aiLoading ? "Analyzing..." : "AI Analyze"}
-          </button>
+          </StarBorder>
         </div>
       </div>
 
