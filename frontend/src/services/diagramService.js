@@ -1,11 +1,23 @@
 import { useAuth, useUser } from "@clerk/clerk-react";
 import React from "react";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (window.location.hostname === "localhost"
-    ? "http://localhost:4000/api"
-    : "https://whiteboard-ai-a5pt.onrender.com/api");
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+  const isLocal =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.startsWith("192.168.") ||
+    hostname.startsWith("10.") ||
+    hostname.startsWith("172.") ||
+    hostname.endsWith(".local");
+
+  if (isLocal) {
+    return `http://${hostname}:4000/api`;
+  }
+  return import.meta.env.VITE_API_BASE_URL || "https://whiteboard-ai-a5pt.onrender.com/api";
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class DiagramService {
   constructor() {

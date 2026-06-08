@@ -154,7 +154,7 @@ const CanvasPage = () => {
       }, 100);
 
       // Update URL without the 'new' parameter
-      const newUrl = `/canvas?project=${newProject.id}`;
+      const newUrl = `/#/canvas?project=${newProject.id}`;
       window.history.replaceState({}, "", newUrl);
     } catch (error) {
       console.error("Error creating project:", error);
@@ -267,7 +267,7 @@ const CanvasPage = () => {
 
     try {
       await diagramService.shareDiagram(currentProject.id);
-      const shareUrl = `${window.location.origin}/share/${currentProject.id}`;
+      const shareUrl = `${window.location.origin}/#/share/${currentProject.id}`;
       await navigator.clipboard.writeText(shareUrl);
       toast.success("Link copied to clipboard!");
     } catch (err) {

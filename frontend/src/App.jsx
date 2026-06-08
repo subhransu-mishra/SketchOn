@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Pricing from "./pages/Pricing";
 import HowToUse from "./pages/HowToUse";
@@ -10,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/pricing" element={<Pricing />} />
@@ -22,7 +22,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ToastContainer position="top-center" theme="dark" autoClose={3000} />
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
