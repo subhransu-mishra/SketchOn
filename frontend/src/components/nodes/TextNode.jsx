@@ -79,7 +79,11 @@ const TextNode = ({ id, data, selected }) => {
           </div>
         </NodeToolbar>
       )}
-      {!data.readOnly && <Handle type="target" position={Position.Top} className="w-3 h-3" />}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className={`w-3 h-3 ${data.readOnly ? "opacity-0 pointer-events-none" : ""}`}
+      />
       <div
         className="flex items-center justify-center h-full px-2"
         onDoubleClick={handleDoubleClick}
@@ -98,7 +102,11 @@ const TextNode = ({ id, data, selected }) => {
           <div className="cursor-pointer">{label}</div>
         )}
       </div>
-      {!data.readOnly && <Handle type="source" position={Position.Bottom} className="w-3 h-3" />}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className={`w-3 h-3 ${data.readOnly ? "opacity-0 pointer-events-none" : ""}`}
+      />
     </div>
   );
 };

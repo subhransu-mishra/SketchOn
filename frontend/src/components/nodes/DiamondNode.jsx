@@ -72,7 +72,11 @@ const DiamondNode = ({ id, data, selected }) => {
           </div>
         </NodeToolbar>
       )}
-      {!data.readOnly && <Handle type="target" position={Position.Top} className="w-3 h-3 z-10" />}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className={`w-3 h-3 z-10 ${data.readOnly ? "opacity-0 pointer-events-none" : ""}`}
+      />
       <div
         className="transform rotate-45 flex items-center justify-center border"
         style={{
@@ -101,13 +105,11 @@ const DiamondNode = ({ id, data, selected }) => {
           )}
         </div>
       </div>
-      {!data.readOnly && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          className="w-3 h-3 z-10"
-        />
-      )}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className={`w-3 h-3 z-10 ${data.readOnly ? "opacity-0 pointer-events-none" : ""}`}
+      />
     </div>
   );
 };

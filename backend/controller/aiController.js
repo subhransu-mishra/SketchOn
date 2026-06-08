@@ -40,9 +40,11 @@ const formatConnections = (edges, nodes) => {
     .join(", ");
 };
 
-// Models to try in order: cheapest first
+// Models to try in order: cheapest/available first
 const FALLBACK_MODELS = [
-  "google/gemini-2.0-flash-001",
+  "google/gemini-2.5-flash",
+  "google/gemini-3.5-flash",
+  "google/gemini-2.5-flash-lite",
   "meta-llama/llama-3.1-8b-instruct:free",
   "anthropic/claude-3.5-haiku",
 ];
@@ -114,11 +116,11 @@ const callAI = async (systemPrompt, userPrompt) => {
           maxTokens,
         );
 
-        // On 402, try next cheaper model
-        if (response.status === 402) {
-          console.warn(`OpenRouter → 402 on ${model}, trying next model...`);
-          lastError = new Error(`Credits exhausted for ${model}`);
-          lastError.status = 402;
+        // On 402 (payment) or 404 (model deprecated/unavailable), try next model
+        if (response.status === 402 || response.status === 404) {
+          console.warn(`OpenRouter → ${response.status} on ${model}, trying next model...`);
+          lastError = new Error(`AI API error ${response.status} for ${model}`);
+          lastError.status = response.status;
           continue;
         }
 

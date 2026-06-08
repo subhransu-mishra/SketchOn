@@ -64,14 +64,14 @@ const IconNode = ({ id, data, selected }) => {
           }
         />
       )}
-      {!data.readOnly && (
-        <Handle
-          type="target"
-          position={Position.Top}
-          className="w-3! h-3! bg-blue-500! border-2! border-neutral-800!"
-          style={{ top: -6 }}
-        />
-      )}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className={`w-3! h-3! bg-blue-500! border-2! border-neutral-800! ${
+          data.readOnly ? "opacity-0 pointer-events-none" : ""
+        }`}
+        style={{ top: -6 }}
+      />
 
       {/* Icon Image */}
       <div className="flex-1 w-full flex items-center justify-center mb-2 bg-neutral-700/50 rounded-lg p-2">
@@ -115,34 +115,34 @@ const IconNode = ({ id, data, selected }) => {
         )}
       </div>
 
-      {!data.readOnly && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          className="w-3! h-3! bg-blue-500! border-2! border-neutral-800!"
-          style={{ bottom: -6 }}
-        />
-      )}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className={`w-3! h-3! bg-blue-500! border-2! border-neutral-800! ${
+          data.readOnly ? "opacity-0 pointer-events-none" : ""
+        }`}
+        style={{ bottom: -6 }}
+      />
 
       {/* Left and Right handles for more connection options */}
-      {!data.readOnly && (
-        <Handle
-          type="source"
-          position={Position.Left}
-          id="left"
-          className="w-3! h-3! bg-green-500! border-2! border-neutral-800!"
-          style={{ left: -6 }}
-        />
-      )}
-      {!data.readOnly && (
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="right"
-          className="w-3! h-3! bg-green-500! border-2! border-neutral-800!"
-          style={{ right: -6 }}
-        />
-      )}
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        className={`w-3! h-3! bg-green-500! border-2! border-neutral-800! ${
+          data.readOnly ? "opacity-0 pointer-events-none" : ""
+        }`}
+        style={{ left: -6 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        className={`w-3! h-3! bg-green-500! border-2! border-neutral-800! ${
+          data.readOnly ? "opacity-0 pointer-events-none" : ""
+        }`}
+        style={{ right: -6 }}
+      />
     </div>
   );
 };
