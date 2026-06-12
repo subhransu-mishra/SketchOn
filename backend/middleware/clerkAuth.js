@@ -1,5 +1,17 @@
 const { ClerkExpressWithAuth } = require("@clerk/clerk-sdk-node");
 
+// Cache the clerkAuth middleware instance to reuse its internally cached JWKS keys
+let clerkAuthInstance = null;
+
+const getClerkAuth = () => {
+  if (!clerkAuthInstance) {
+    clerkAuthInstance = ClerkExpressWithAuth({
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
+  }
+  return clerkAuthInstance;
+};
+
 // Production-ready authentication middleware
 const validateClerkUser = (req, res, next) => {
   console.log("Auth middleware called:", {
@@ -36,9 +48,7 @@ const validateClerkUser = (req, res, next) => {
   }
 
   // Use Clerk authentication
-  const clerkAuth = ClerkExpressWithAuth({
-    secretKey: process.env.CLERK_SECRET_KEY,
-  });
+  const clerkAuth = getClerkAuth();
 
   clerkAuth(req, res, (err) => {
     if (err) {

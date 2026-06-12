@@ -376,7 +376,7 @@ const CanvasPage = () => {
             color="#e9d5ff"
             speed="4s"
             thickness={2}
-            className="absolute top-4 right-4 z-10 rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+            className="fixed top-4 right-4 z-20 rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
             innerClassName="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 rounded-[7px] flex items-center gap-2"
           >
             {aiLoading ? (

@@ -29,6 +29,68 @@ class DiagramService {
     this.getAuthToken = getAuthToken;
   }
 
+  // Helper method to fetch with retry on network error, timeout, or 502/503/504 gateway errors
+  async fetchWithRetry(url, options = {}, retries = 2, delay = 1000) {
+    const isDev = import.meta.env.DEV;
+    const method = options.method || "GET";
+    const isIdempotent = method === "GET" || method === "HEAD" || method === "OPTIONS";
+    const timeout = options.timeout || 30000;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      const requestOptions = {
+        ...options,
+        signal: controller.signal
+      };
+      // Remove custom timeout from options so window.fetch doesn't complain
+      delete requestOptions.timeout;
+
+      try {
+        if (isDev && attempt > 0) {
+          console.log(`Retrying request to ${url} (Attempt ${attempt}/${retries})...`);
+        }
+        
+        const response = await fetch(url, requestOptions);
+        clearTimeout(timeoutId);
+        
+        // Handle gateway/proxy errors often encountered during server cold starts
+        if ((response.status === 502 || response.status === 503 || response.status === 504) && isIdempotent && attempt < retries) {
+          const backoffDelay = delay * Math.pow(2, attempt);
+          if (isDev) {
+            console.warn(`Request to ${url} failed with status ${response.status}. Retrying in ${backoffDelay}ms...`);
+          }
+          await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+          continue;
+        }
+        
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        const isTimeout = error.name === "AbortError";
+        const isNetworkError = error.name === "TypeError" || error.message?.includes("Failed to fetch");
+        
+        const shouldRetry = (isTimeout || isNetworkError) && isIdempotent && attempt < retries;
+        
+        if (shouldRetry) {
+          const backoffDelay = delay * Math.pow(2, attempt);
+          if (isDev) {
+            console.warn(`Request to ${url} failed (${error.message}). Retrying in ${backoffDelay}ms...`);
+          }
+          await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+          continue;
+        }
+        
+        if (isTimeout) {
+          throw new Error("Request timed out. The server may be waking up - please retry.");
+        }
+        throw error;
+      }
+    }
+  }
+
   // Helper method to safely parse response - FIXED: reads body only once
   async parseResponse(response, context = "API call") {
     // Read body as text first to avoid "body stream already read" error
@@ -117,31 +179,21 @@ class DiagramService {
       console.log("Fetching diagrams from:", `${API_BASE_URL}/diagrams`);
     }
 
-    // Add timeout for production reliability
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/diagrams`, {
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/diagrams`,
+      {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        signal: controller.signal,
-      });
+        timeout: 30000,
+      },
+      3,
+      1000
+    );
 
-      clearTimeout(timeoutId);
-      return await this.parseResponse(response, "getAllDiagrams");
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error(
-          "Request timed out. Please check your connection and try again.",
-        );
-      }
-      throw error;
-    }
+    return await this.parseResponse(response, "getAllDiagrams");
   }
 
   // Get a single diagram by ID
@@ -152,53 +204,39 @@ class DiagramService {
 
     const token = await this.getAuthToken();
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}`, {
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/diagrams/${diagramId}`,
+      {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        signal: controller.signal,
-      });
+        timeout: 30000,
+      },
+      3,
+      1000
+    );
 
-      clearTimeout(timeoutId);
-      return await this.parseResponse(response, "getDiagram");
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error("Request timed out. Please try again.");
-      }
-      throw error;
-    }
+    return await this.parseResponse(response, "getDiagram");
   }
 
   // Get a single diagram by ID (public access, no auth required)
   async getPublicDiagram(diagramId) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/diagrams/public/${diagramId}`, {
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/diagrams/public/${diagramId}`,
+      {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
-        signal: controller.signal,
-      });
+        timeout: 30000,
+      },
+      3,
+      1000
+    );
 
-      clearTimeout(timeoutId);
-      return await this.parseResponse(response, "getPublicDiagram");
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error("Request timed out. Please try again.");
-      }
-      throw error;
-    }
+    return await this.parseResponse(response, "getPublicDiagram");
   }
 
   // Share a diagram (requires auth)
@@ -209,28 +247,20 @@ class DiagramService {
 
     const token = await this.getAuthToken();
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}/share`, {
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/diagrams/${diagramId}/share`,
+      {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        signal: controller.signal,
-      });
+        timeout: 15000,
+      },
+      0
+    );
 
-      clearTimeout(timeoutId);
-      return await this.parseResponse(response, "shareDiagram");
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error("Request timed out. Please try again.");
-      }
-      throw error;
-    }
+    return await this.parseResponse(response, "shareDiagram");
   }
 
   // Create a new diagram
@@ -241,29 +271,21 @@ class DiagramService {
 
     const token = await this.getAuthToken();
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/diagrams`, {
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/diagrams`,
+      {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(diagramData),
-        signal: controller.signal,
-      });
+        timeout: 15000,
+      },
+      0
+    );
 
-      clearTimeout(timeoutId);
-      return await this.parseResponse(response, "createDiagram");
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error("Request timed out while creating diagram.");
-      }
-      throw error;
-    }
+    return await this.parseResponse(response, "createDiagram");
   }
 
   // Update/Save a diagram
@@ -309,29 +331,21 @@ class DiagramService {
       });
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s for save
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}`, {
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/diagrams/${diagramId}`,
+      {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(sanitizedData),
-        signal: controller.signal,
-      });
+        timeout: 20000,
+      },
+      0
+    );
 
-      clearTimeout(timeoutId);
-      return await this.parseResponse(response, "saveDiagram");
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error("Save request timed out. Please try again.");
-      }
-      throw error;
-    }
+    return await this.parseResponse(response, "saveDiagram");
   }
 
   // Analyze diagram with AI
@@ -345,29 +359,21 @@ class DiagramService {
       throw new Error("No authentication token available");
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for AI
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/ai/analyze`,
+      {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ title, nodes, edges }),
-        signal: controller.signal,
-      });
+        timeout: 60000,
+      },
+      0
+    );
 
-      clearTimeout(timeoutId);
-      return await this.parseResponse(response, "analyzeDiagram");
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error("AI analysis request timed out. Please try again.");
-      }
-      throw error;
-    }
+    return await this.parseResponse(response, "analyzeDiagram");
   }
 
   // Delete a diagram
@@ -378,28 +384,20 @@ class DiagramService {
 
     const token = await this.getAuthToken();
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/diagrams/${diagramId}`, {
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/diagrams/${diagramId}`,
+      {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        signal: controller.signal,
-      });
+        timeout: 15000,
+      },
+      0
+    );
 
-      clearTimeout(timeoutId);
-      return await this.parseResponse(response, "deleteDiagram");
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error("Delete request timed out. Please try again.");
-      }
-      throw error;
-    }
+    return await this.parseResponse(response, "deleteDiagram");
   }
 
   // Test API connectivity and configuration
