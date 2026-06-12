@@ -3,6 +3,7 @@ import Footer from "../components/Footer";
 import Reviews from "../components/Reviews";
 import Hero from "../components/Hero";
 import HowToUse from "../components/HowToUse";
+import ShowcaseFeatures from "../components/ShowcaseFeatures";
 import BetaPopup from "../components/BetaPopup";
 
 const Home = () => {
@@ -18,7 +19,8 @@ const Home = () => {
         {/* How to Use */}
         <HowToUse />
 
-        {/* Pricing */}
+        {/* Features Showcase */}
+        <ShowcaseFeatures />
 
         {/* Reviews */}
         <Reviews />

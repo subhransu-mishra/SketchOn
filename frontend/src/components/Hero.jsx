@@ -18,6 +18,7 @@ import {
   FiMenu,
   FiX,
 } from "react-icons/fi";
+import StarBorder from "./StarBorder";
 
 const navLinks = [
   { label: "Pricing", href: "/pricing" },
@@ -61,9 +62,9 @@ const Hero = () => {
             <div className="flex items-center gap-2">
               <div>
                 <p className="text-xl font-semibold">Sketch On</p>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">
+                {/* <p className="text-xs uppercase tracking-[0.3em] text-white/60">
                   by subhransu
-                </p>
+                </p> */}
               </div>
               <span className="rounded-md border border-white/20 bg-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/70">
                 Beta
@@ -80,26 +81,38 @@ const Hero = () => {
               <Link
                 key={link.href}
                 to={link.href}
-                className="transition hover:text-white"
+                className="relative py-1 text-white/70 hover:text-white transition-colors duration-300 group"
               >
-                {link.label}
+                <span>{link.label}</span>
+                <span className="absolute bottom-0 left-1/2 w-0 h-[1.5px] bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300 -translate-x-1/2 group-hover:w-full" />
               </Link>
             ))}
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="rounded-full border cursor-pointer border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/10">
+                <StarBorder
+                  color="#ffffff"
+                  speed="6s"
+                  thickness={1}
+                  className="rounded-full shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                  innerClassName="bg-neutral-950 hover:bg-neutral-900 text-white text-sm font-semibold px-4 py-2 rounded-full cursor-pointer flex items-center justify-center"
+                >
                   Sign In
-                </button>
+                </StarBorder>
               </SignInButton>
             </SignedOut>
             <SignedIn>
               <div className="flex items-center gap-4">
-                <Link
+                <StarBorder
+                  as={Link}
                   to="/dashboard"
-                  className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/20"
+                  color="#ffffff"
+                  speed="6s"
+                  thickness={1}
+                  className="rounded-full shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                  innerClassName="bg-neutral-950 hover:bg-neutral-900 text-white text-sm font-semibold px-4 py-2 rounded-full cursor-pointer flex items-center justify-center"
                 >
                   Dashboard
-                </Link>
+                </StarBorder>
                 <div className="flex items-center gap-3">
                   <UserButton
                     appearance={{
@@ -276,45 +289,46 @@ const Hero = () => {
           >
             {/* Get Started - Sign in popup for unauthenticated, Dashboard for authenticated */}
             <SignedOut>
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                  <button className="inline-flex items-center justify-center gap-2 rounded-full bg-white text-neutral-950 px-8 py-4 text-sm font-semibold transition-all duration-300 hover:bg-white/90 hover:shadow-lg hover:shadow-white/10 focus:outline-none cursor-pointer">
-                    Get Started
-                    <FiArrowRight className="h-4 w-4" />
-                  </button>
-                </SignInButton>
-              </motion.div>
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                <StarBorder
+                  color="#3b82f6"
+                  speed="4s"
+                  thickness={1.5}
+                  className="rounded-full shadow-lg"
+                  innerClassName="bg-white hover:bg-white/95 text-neutral-950 text-sm font-semibold px-8 py-4 rounded-full flex items-center gap-2 cursor-pointer"
+                >
+                  Get Started
+                  <FiArrowRight className="h-4 w-4" />
+                </StarBorder>
+              </SignInButton>
             </SignedOut>
             <SignedIn>
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+              <StarBorder
+                as={Link}
+                to="/dashboard"
+                color="#3b82f6"
+                speed="4s"
+                thickness={1.5}
+                className="rounded-full shadow-lg"
+                innerClassName="bg-white hover:bg-white/95 text-neutral-950 text-sm font-semibold px-8 py-4 rounded-full flex items-center gap-2 cursor-pointer"
               >
-                <Link
-                  to="/dashboard"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white text-neutral-950 px-8 py-4 text-sm font-semibold transition-all duration-300 hover:bg-white/90 hover:shadow-lg hover:shadow-white/10 focus:outline-none"
-                >
-                  Go to Dashboard
-                  <FiArrowRight className="h-4 w-4" />
-                </Link>
-              </motion.div>
+                Go to Dashboard
+                <FiArrowRight className="h-4 w-4" />
+              </StarBorder>
             </SignedIn>
 
-            <motion.div
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
+            <StarBorder
+              as={Link}
+              to="/how-to-use"
+              color="#ffffff"
+              speed="6s"
+              thickness={1}
+              className="rounded-full shadow-md"
+              innerClassName="bg-neutral-950 hover:bg-neutral-900 text-white text-sm font-semibold px-8 py-4 rounded-full flex items-center gap-2 cursor-pointer border border-white/5"
             >
-              <Link
-                to="/how-to-use"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 text-white px-8 py-4 text-sm font-semibold transition-all duration-300 hover:border-white/40 hover:bg-white/10 focus:outline-none backdrop-blur-sm"
-              >
-                <FiPlay className="h-4 w-4" />
-                See how it works
-              </Link>
-            </motion.div>
+              <FiPlay className="h-4 w-4" />
+              See how it works
+            </StarBorder>
           </motion.div>
 
           {/* Feature cards (replacing stats) */}
