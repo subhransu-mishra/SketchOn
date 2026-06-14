@@ -59,7 +59,7 @@ const BetaPopup = () => {
                 <FiAlertCircle className="h-7 w-7 text-white/80" />
               </motion.div>
 
-              <h2 className="text-2xl font-semibold mb-2">Beta Version</h2>
+              <h2 className="text-2xl font-semibold mb-2">Beta 1.1.0 Version</h2>
               <p className="text-white/60 leading-relaxed mb-6">
                 Sketch On is currently in beta. Some features are still under
                 development, and you may encounter occasional bugs. We

@@ -1,3 +1,5 @@
+const User = require("../schema/user.js");
+
 // Compact system prompt to minimize input token usage
 const SYSTEM_PROMPT = `You are a Senior Distributed Systems Architect. Analyze the given HLD diagram and return ONLY valid JSON.`;
 
@@ -190,8 +192,19 @@ const callAI = async (systemPrompt, userPrompt) => {
 };
 
 const analyzeDiagram = async (req, res) => {
+  const clerkUserId = req.clerkUserId;
+  let user = null;
+  let creditsDeducted = false;
+
   try {
     const { title, nodes, edges } = req.body;
+
+    if (!clerkUserId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
 
     if (!nodes || !Array.isArray(nodes)) {
       return res.status(400).json({
@@ -206,6 +219,32 @@ const analyzeDiagram = async (req, res) => {
         message: "AI service is not configured. Please set ANTHROPIC_API_KEY.",
       });
     }
+
+    // Find user or create if they don't exist
+    user = await User.findOne({ clerkUserId });
+    if (!user) {
+      user = new User({
+        clerkUserId,
+        credits: 10,
+        isSubscribed: false,
+        plan: "basic",
+      });
+      await user.save();
+    }
+
+    // Check credits
+    if (user.credits < 5) {
+      return res.status(403).json({
+        success: false,
+        message: `Insufficient credits. You need 5 credits for AI analysis, but only have ${user.credits} remaining.`,
+        creditsRemaining: user.credits,
+      });
+    }
+
+    // Deduct credits
+    user.credits -= 5;
+    await user.save();
+    creditsDeducted = true;
 
     const components = formatComponents(nodes);
     const connections = formatConnections(edges, nodes);
@@ -257,9 +296,24 @@ const analyzeDiagram = async (req, res) => {
     return res.json({
       success: true,
       data: analysis,
+      creditsRemaining: user.credits,
     });
   } catch (error) {
     console.error("AI analysis error:", error);
+
+    // Refund credits on failure if they were deducted
+    if (creditsDeducted && user) {
+      try {
+        const freshUser = await User.findOne({ clerkUserId });
+        if (freshUser) {
+          freshUser.credits += 5;
+          await freshUser.save();
+          console.log(`Refunded 5 credits to user ${clerkUserId} due to AI analysis failure.`);
+        }
+      } catch (refundError) {
+        console.error("Failed to refund credits:", refundError);
+      }
+    }
 
     if (error.status === 401) {
       return res.status(500).json({

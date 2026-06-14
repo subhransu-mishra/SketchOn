@@ -400,6 +400,90 @@ class DiagramService {
     return await this.parseResponse(response, "deleteDiagram");
   }
 
+  // Get user profile including credits, subscription status, and plan
+  async getUserProfile() {
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
+
+    const token = await this.getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
+
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/users/profile`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 15000,
+      },
+      3,
+      1000
+    );
+
+    return await this.parseResponse(response, "getUserProfile");
+  }
+
+  // Add test credits (Testing utility)
+  async addTestCredits(amount = 10) {
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
+
+    const token = await this.getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
+
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/users/add-credits`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ amount }),
+        timeout: 15000,
+      },
+      0
+    );
+
+    return await this.parseResponse(response, "addTestCredits");
+  }
+
+  // Toggle mock subscription status (Testing utility)
+  async toggleSubscription(isSubscribed, plan) {
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
+
+    const token = await this.getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
+
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/users/subscribe`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isSubscribed, plan }),
+        timeout: 15000,
+      },
+      0
+    );
+
+    return await this.parseResponse(response, "toggleSubscription");
+  }
+
   // Test API connectivity and configuration
   async testConnection() {
     try {

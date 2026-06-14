@@ -4,6 +4,10 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   IoCloseOutline as XMarkIcon,
   IoDocumentTextOutline as DocumentTextIcon,
+  IoHelpCircleOutline as HelpIcon,
+  IoWalletOutline as WalletIcon,
+  IoSparklesOutline as SparklesIcon,
+  IoBookOutline as BookIcon,
 } from "react-icons/io5";
 import Sidebar from "./Sidebar";
 import CanvasSurface from "../../components/CanvasSurface";
@@ -15,9 +19,15 @@ import { toast } from "react-toastify";
 
 const CanvasPage = () => {
   const { isSignedIn, user } = useUser();
-  const { diagramService, isReady } = useDiagramService();
+  const { diagramService, isReady, isLoaded } = useDiagramService();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Credit and Guidance states
+  const [userProfile, setUserProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [showGuidance, setShowGuidance] = useState(false);
 
   const [showTitleModal, setShowTitleModal] = useState(false);
   const [currentProject, setCurrentProject] = useState(null);
@@ -51,6 +61,35 @@ const CanvasPage = () => {
       }
     }
   }, [isSignedIn, user, isReady, isNewProject, projectId, navigate]);
+
+  // Load user profile on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!isLoaded || !isSignedIn || !user || !isReady) {
+        return;
+      }
+      try {
+        setProfileLoading(true);
+        const profileData = await diagramService.getUserProfile();
+        if (profileData && profileData.success) {
+          setUserProfile(profileData.data);
+        }
+      } catch (err) {
+        console.error("Error loading user profile on canvas page:", err);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    loadProfile();
+  }, [isLoaded, isSignedIn, user, isReady, diagramService]);
+
+  // Initialize guidance state from localStorage (only show one time)
+  useEffect(() => {
+    const dismissed = localStorage.getItem("sketchon_guidance_dismissed");
+    if (!dismissed) {
+      setShowGuidance(true);
+    }
+  }, []);
 
   const loadExistingProject = async (id) => {
     try {
@@ -277,14 +316,21 @@ const CanvasPage = () => {
     }
   };
 
-  // AI Analysis handler
-  const handleAiAnalyze = async () => {
+  // AI Analysis handler - clicks and triggers credit check modal
+  const handleAiAnalyzeClick = () => {
     if (!projectData.nodes || projectData.nodes.length === 0) {
       setAiError("Add some components to your diagram before analyzing.");
       setShowAiPanel(true);
       return;
     }
+    
+    // Open the credit confirmation modal
+    setShowCreditModal(true);
+  };
 
+  // Perform AI analysis after user clicks continue on the credit modal
+  const handleConfirmAiAnalyze = async () => {
+    setShowCreditModal(false);
     setShowAiPanel(true);
     setAiLoading(true);
     setAiError(null);
@@ -299,12 +345,40 @@ const CanvasPage = () => {
 
       if (result.success) {
         setAiAnalysis(result.data);
+        // Update local profile credit count
+        if (result.creditsRemaining !== undefined) {
+          setUserProfile((prev) => prev ? { ...prev, credits: result.creditsRemaining } : null);
+        } else {
+          // Fallback refresh
+          const profileData = await diagramService.getUserProfile();
+          if (profileData && profileData.success) {
+            setUserProfile(profileData.data);
+          }
+        }
       } else {
         setAiError(result.message || "Analysis failed");
+        // Refresh profile just in case of refund
+        try {
+          const profileData = await diagramService.getUserProfile();
+          if (profileData && profileData.success) {
+            setUserProfile(profileData.data);
+          }
+        } catch (e) {
+          console.error("Profile reload failed", e);
+        }
       }
     } catch (err) {
       console.error("AI analysis error:", err);
       setAiError(err.message || "Failed to analyze diagram");
+      // Refresh profile just in case of refund
+      try {
+        const profileData = await diagramService.getUserProfile();
+        if (profileData && profileData.success) {
+          setUserProfile(profileData.data);
+        }
+      } catch (e) {
+        console.error("Profile reload failed", e);
+      }
     } finally {
       setAiLoading(false);
     }
@@ -372,7 +446,7 @@ const CanvasPage = () => {
           {/* AI Analyze Button - Top Right */}
           <div className="fixed top-4 right-4 z-20">
             <StarBorder
-              onClick={handleAiAnalyze}
+              onClick={handleAiAnalyzeClick}
               disabled={aiLoading}
               color="#e9d5ff"
               speed="4s"
@@ -501,6 +575,175 @@ const CanvasPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Credit Confirmation Modal */}
+      {showCreditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowCreditModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md mx-4 bg-neutral-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                
+                <div>
+                  <h2 className="text-lg font-semibold text-white">
+                    AI Design Review
+                  </h2>
+                  <p className="text-sm text-white/60">
+                    Spend credits for analysis
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCreditModal(false)}
+                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-5 w-5 text-white/60" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <WalletIcon className="h-5 w-5 text-white/60" />
+                  <span className="text-sm text-white/80">Available balance:</span>
+                </div>
+                <span className="text-base font-bold text-white">
+                  {profileLoading ? "..." : `${userProfile?.credits ?? 0} credits`}
+                </span>
+              </div>
+
+              <div className="text-sm text-white/70 space-y-2">
+                <p>
+                  Running this analysis costs <strong className="text-purple-400">5 AI credits</strong>.
+                </p>
+                <p className="text-xs text-white/50">
+                  Our AI evaluates your architecture layout, identifies potential bottlenecks, security concerns, and offers tailored system design advice.
+                </p>
+              </div>
+
+              {/* Insufficient warning */}
+              {!profileLoading && (userProfile?.credits ?? 0) < 5 && (
+                <div className="flex gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
+                  <span className="font-semibold">⚠️ Insufficient Credits:</span>
+                  <span>You need at least 5 credits. Subscribe or purchase more credits to continue.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-white/10">
+              <button
+                onClick={() => setShowCreditModal(false)}
+                className="px-4 py-2 text-sm font-medium cursor-pointer text-white/60 hover:text-white border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              
+              {(!profileLoading && (userProfile?.credits ?? 0) < 5) ? (
+                <button
+                  onClick={() => {
+                    setShowCreditModal(false);
+                    navigate("/pricing");
+                  }}
+                  className="px-6 py-2 text-sm font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  Buy Credits / Upgrade
+                </button>
+              ) : (
+                <StarBorder
+                  onClick={handleConfirmAiAnalyze}
+                  disabled={profileLoading}
+                  color="#e9d5ff"
+                  speed="4s"
+                  thickness={2}
+                  className="rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+                  innerClassName="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-[7px] flex items-center gap-2 cursor-pointer"
+                >
+                  Continue (Spend 5 Cr)
+                </StarBorder>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Instruction Guidance Panel */}
+      {showGuidance && (
+        <div className="fixed bottom-24 md:bottom-6 right-6 z-30 w-full max-w-[340px] bg-neutral-900 border border-white/10 rounded-xl p-5 shadow-2xl backdrop-blur-md">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <BookIcon className="h-5 w-5 text-blue-400" />
+              <h4 className="text-sm font-semibold text-white">How to Use the Whiteboard</h4>
+            </div>
+            <button
+              onClick={() => {
+                setShowGuidance(false);
+                localStorage.setItem("sketchon_guidance_dismissed", "true");
+              }}
+              className="p-1 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-colors cursor-pointer"
+              title="Dismiss Instructions"
+            >
+              <XMarkIcon className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Guide Steps */}
+          <div className="space-y-3 text-xs text-white/70">
+            <div className="flex gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400">1</span>
+              <p><strong>Drag Components:</strong> Grab shapes or tech icons from the sidebar and drag them onto the whiteboard canvas.</p>
+            </div>
+            <div className="flex gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400">2</span>
+              <p><strong>Add Connections:</strong> Hover over any node, drag a wire from any handle and connect it to another node's handles.</p>
+            </div>
+            <div className="flex gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400">3</span>
+              <p><strong>Edit Label:</strong> Double-click text or components on the canvas to edit, scale, or delete them.</p>
+            </div>
+            <div className="flex gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400">4</span>
+              <p><strong>AI Analyze:</strong> Run an architect design review using the top-right button (costs 5 credits).</p>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-white/5 flex justify-end">
+            <StarBorder
+              onClick={() => {
+                setShowGuidance(false);
+                localStorage.setItem("sketchon_guidance_dismissed", "true");
+              }}
+              color="#e9d5ff"
+              speed="4s"
+              thickness={2}
+              className="rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+              innerClassName="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-4 py-2 rounded-[7px] cursor-pointer"
+            >
+              Got it!
+            </StarBorder>
+          </div>
+        </div>
+      )}
+
+      {/* Floating help toggle button */}
+      {!showGuidance && (
+        <button
+          onClick={() => setShowGuidance(true)}
+          className="fixed bottom-24 md:bottom-6 right-6 z-30 h-10 w-10 bg-neutral-800 hover:bg-neutral-700 border border-white/10 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all cursor-pointer hover:scale-105 active:scale-95"
+          title="Show Whiteboard Instructions"
+        >
+          <HelpIcon className="h-5 w-5" />
+        </button>
       )}
     </>
   );

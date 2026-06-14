@@ -14,13 +14,17 @@ import {
   FiActivity,
   FiCheckCircle,
 } from "react-icons/fi";
+import { useDiagramService } from "../services/diagramService";
+import { toast } from "react-toastify";
 
 const Pricing = () => {
   const navigate = useNavigate();
+  const { diagramService, isReady, isSignedIn } = useDiagramService();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isAnnual, setIsAnnual] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card"); // "card" or "upi"
   const [paymentStep, setPaymentStep] = useState("pricing"); // "pricing", "checkout", "processing", "success"
+  const [sandboxLoading, setSandboxLoading] = useState(false);
   
   // Card form state
   const [cardNumber, setCardNumber] = useState("");
@@ -154,7 +158,17 @@ const Pricing = () => {
     setPaymentStep("processing");
     
     // Simulate payment process
-    setTimeout(() => {
+    setTimeout(async () => {
+      try {
+        if (isSignedIn && isReady) {
+          const planCode = selectedPlan.id === "professional" ? "pro" : "starter";
+          await diagramService.toggleSubscription(true, planCode);
+          toast.success(`Upgraded to ${selectedPlan.name}!`);
+        }
+      } catch (err) {
+        console.error("Failed to upgrade subscription in database:", err);
+        toast.error("Billing simulation saved locally but DB sync failed.");
+      }
       setPaymentStep("success");
     }, 2500);
   };
@@ -253,7 +267,7 @@ const Pricing = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <FiZap className="h-3 w-3 animate-pulse" /> Scalable Whiteboard Powered By AI
+                  <FiZap className="h-3 w-3 animate-pulse" /> Let's design your idea
                 </motion.div>
                 <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl mb-6 bg-gradient-to-b from-white via-white to-white/60 bg-clip-text text-transparent">
                   Supercharge Your <br/>System Designs
@@ -698,6 +712,95 @@ const Pricing = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Developer Testing Sandbox */}
+        {isSignedIn && isReady && (
+          <div className="mt-20 w-full max-w-4xl bg-neutral-900/60 border border-dashed border-white/20 rounded-2xl p-6 backdrop-blur-md">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
+              🛠️ Developer Testing Sandbox
+            </h3>
+            <p className="text-sm text-white/60 mb-6">
+              Simulate actions to test credit limitations, UI badges, and payment deduction behaviors instantly.
+            </p>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <button
+                onClick={async () => {
+                  try {
+                    setSandboxLoading(true);
+                    const res = await diagramService.addTestCredits(10);
+                    toast.success(`Added 10 credits! Total: ${res.data?.credits}`);
+                  } catch (err) {
+                    toast.error(err.message);
+                  } finally {
+                    setSandboxLoading(false);
+                  }
+                }}
+                disabled={sandboxLoading}
+                className="py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-xs font-semibold hover:bg-white/10 active:scale-95 transition-all text-white cursor-pointer disabled:opacity-50"
+              >
+                +10 Credits
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    setSandboxLoading(true);
+                    const res = await diagramService.addTestCredits(50);
+                    toast.success(`Added 50 credits! Total: ${res.data?.credits}`);
+                  } catch (err) {
+                    toast.error(err.message);
+                  } finally {
+                    setSandboxLoading(false);
+                  }
+                }}
+                disabled={sandboxLoading}
+                className="py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-xs font-semibold hover:bg-white/10 active:scale-95 transition-all text-white cursor-pointer disabled:opacity-50"
+              >
+                +50 Credits
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    setSandboxLoading(true);
+                    // Fetch profile, see current credits, and subtract to make it 0
+                    const profile = await diagramService.getUserProfile();
+                    const currentCredits = profile.data?.credits ?? 0;
+                    const res = await diagramService.addTestCredits(-currentCredits);
+                    toast.warn(`Drained credits to 0! Total: ${res.data?.credits}`);
+                  } catch (err) {
+                    toast.error(err.message);
+                  } finally {
+                    setSandboxLoading(false);
+                  }
+                }}
+                disabled={sandboxLoading}
+                className="py-3 px-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-semibold hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                Set Credits to 0
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    setSandboxLoading(true);
+                    const res = await diagramService.toggleSubscription();
+                    toast.success(`Plan toggled! Plan: ${res.data?.plan}, Subscribed: ${res.data?.isSubscribed}`);
+                  } catch (err) {
+                    toast.error(err.message);
+                  } finally {
+                    setSandboxLoading(false);
+                  }
+                }}
+                disabled={sandboxLoading}
+                className="py-3 px-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded-xl text-xs font-semibold hover:bg-indigo-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                Toggle Pro Subscription
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

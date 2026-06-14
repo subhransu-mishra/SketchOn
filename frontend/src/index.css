@@ -75,3 +75,37 @@ a {
     touch-action: pan-x pan-y pinch-zoom;
   }
 }
+
+/* Shimmer animations & custom styles for Hero feature cards */
+@keyframes shimmer-line {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes shimmer-underline {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes feat-card-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.feat-card-outer:hover .feat-shimmer-border { opacity: 1 !important; }
+.feat-card-outer:hover .feat-dim-border     { border-color: rgba(255,255,255,0.2) !important; }
+.feat-card-outer:hover .feat-card-body      { background: rgba(255,255,255,0.07) !important; transform: translateY(-3px) !important; }
+.feat-card-outer:hover .feat-spotlight      { opacity: 1 !important; }
+.feat-card-outer:hover .feat-icon-box {
+  background: rgba(99,102,241,0.15) !important;
+  border-color: rgba(99,102,241,0.45) !important;
+  box-shadow: 0 0 14px rgba(99,102,241,0.28) !important;
+}
+.feat-card-outer:hover .feat-icon   { color: #a5b4fc !important; }
+.feat-card-outer:hover .feat-label  {
+  background: linear-gradient(90deg, rgba(255,255,255,0.92) 30%, #a5b4fc 50%, rgba(255,255,255,0.92) 70%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-line 1.5s linear infinite;
+}
