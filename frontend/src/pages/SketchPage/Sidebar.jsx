@@ -1,6 +1,5 @@
 import React, {
   useState,
-  useMemo,
   useEffect,
   useRef,
   useCallback,
@@ -13,8 +12,6 @@ import {
   IoSaveOutline as SaveIcon,
   IoCheckmarkCircle as CheckIcon,
   IoWarningOutline as WarningIcon,
-  IoSearchOutline as SearchIcon,
-  IoCloseOutline as CloseIcon,
   IoShapesOutline as ShapesIcon,
   IoAppsOutline as AppsIcon,
   IoMenuOutline as MenuIcon,
@@ -22,7 +19,6 @@ import {
   IoChevronUpOutline as ChevronUpIcon,
   IoShareOutline as ShareIcon,
 } from "react-icons/io5";
-import { ICONS, searchIcons } from "../../data/icons";
 import StarBorder from "../../components/StarBorder";
 
 const MIN_SIDEBAR_WIDTH = 220;
@@ -45,21 +41,18 @@ const DesktopSidebar = React.forwardRef(
       saveStatus,
       onManualSave,
       onShare,
-      iconSearchQuery,
-      setIconSearchQuery,
       symbols,
-      filteredIcons,
       onDragStart,
       statusInfo,
-      iconCount,
       sidebarWidth,
       onResizeMouseDown,
+      onOpenIconsModal,
     },
     ref,
   ) => (
     <div
       ref={ref}
-      className="hidden md:flex bg-neutral-900 border-r border-white/10 p-4 flex-col h-full relative flex-shrink-0"
+      className="hidden md:flex bg-neutral-900 border-r border-white/10 p-4 flex-col h-full relative flex-shrink-0 select-none"
       style={{ width: sidebarWidth }}
     >
       {/* Header with Project Info */}
@@ -115,7 +108,7 @@ const DesktopSidebar = React.forwardRef(
                   onClick={onManualSave}
                   disabled={saveStatus === "saving" || saveStatus === "saved"}
                   className={`
-                    flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors
+                    flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors cursor-pointer
                     ${
                       saveStatus === "unsaved"
                         ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -139,10 +132,10 @@ const DesktopSidebar = React.forwardRef(
                 speed="4s"
                 thickness={2}
                 className="w-full rounded-lg"
-                innerClassName="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-[7px] bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                innerClassName="w-full cursor-pointer flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-[7px] bg-purple-600 hover:bg-purple-700 text-white transition-colors"
                 title="Share project public link"
               >
-                <ShareIcon className="h-4 w-4" />
+                <ShareIcon className="h-4 w-4 cursor-pointer" />
                 Share Project
               </StarBorder>
             </div>
@@ -150,95 +143,48 @@ const DesktopSidebar = React.forwardRef(
         )}
       </div>
 
-      {/* Components Section */}
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-white mb-4">Components</h2>
-        <div className="space-y-2">
+      {/* Shapes & Symbols Section */}
+      <div className="mb-6">
+        <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Shapes & Symbols</h2>
+        <div className="grid grid-cols-4 gap-2">
           {symbols.map((symbol) => (
             <div
               key={symbol.id}
-              className="flex items-center gap-3 p-3 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 transition-colors active:cursor-grabbing"
+              className="flex flex-col items-center justify-center p-3.5 bg-neutral-850 hover:bg-neutral-800 border border-white/5 hover:border-purple-500/30 rounded-xl cursor-grab transition-all duration-200 active:cursor-grabbing relative group shadow-md"
               draggable
-              onDragStart={(event) => onDragStart(event, symbol.type)}
-              title={`Drag to add ${symbol.label}`}
+              onDragStart={(event) => onDragStart(event, symbol.type, symbol.arrowType)}
             >
-              <span className="text-xl">{symbol.icon}</span>
-              <span className="text-sm font-medium text-white/80">
+              <span className="text-2xl transition-transform duration-200 group-hover:scale-110 select-none">{symbol.icon}</span>
+              {/* Tooltip */}
+              <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-neutral-950 border border-white/15 text-white text-[10px] px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-2xl">
                 {symbol.label}
-              </span>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Icons Section with Search */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <h2 className="text-lg font-semibold text-white mb-3">Icons</h2>
-
-        {/* Search Input */}
-        <div className="relative mb-3">
-          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
-          <input
-            type="text"
-            value={iconSearchQuery}
-            onChange={(e) => setIconSearchQuery(e.target.value)}
-            placeholder="Search icons..."
-            className="w-full pl-9 pr-8 py-2 bg-neutral-800 border border-white/10 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
-          />
-          {iconSearchQuery && (
-            <button
-              onClick={() => setIconSearchQuery("")}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-white/10 rounded transition-colors"
-            >
-              <CloseIcon className="h-4 w-4 text-white/40" />
-            </button>
-          )}
-        </div>
-
-        {/* Icons Grid */}
-        <div className="flex-1 overflow-y-auto">
-          {filteredIcons.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2">
-              {filteredIcons.map((iconItem) => (
-                <div
-                  key={iconItem.id}
-                  className="flex flex-col items-center gap-1 p-2 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 hover:border-blue-500/50 transition-all active:cursor-grabbing"
-                  draggable
-                  onDragStart={(event) =>
-                    onDragStart(event, "iconNode", iconItem)
-                  }
-                  title={`Drag to add ${iconItem.name}`}
-                >
-                  <img
-                    src={iconItem.icon}
-                    alt={iconItem.name}
-                    className="w-8 h-8 object-contain pointer-events-none"
-                    draggable={false}
-                  />
-                  <span className="text-[10px] font-medium text-white/70 text-center truncate w-full">
-                    {iconItem.name}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-white/40">
-              <SearchIcon className="h-8 w-8 mb-2" />
-              <p className="text-sm">No icons found</p>
-              <p className="text-xs mt-1">Try a different search term</p>
-            </div>
-          )}
-        </div>
-
-        {/* Icon count */}
-        <div className="mt-2 text-xs text-white/40 text-center">
-          {filteredIcons.length} of {iconCount} icons
-        </div>
+      {/* Tech Icons Library Section */}
+      <div className="mt-4 pt-4 border-t border-white/10">
+        <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Tech Icons</h2>
+        <StarBorder
+          onClick={onOpenIconsModal}
+          color="#e9d5ff"
+          speed="4s"
+          thickness={2}
+          className="w-full rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+          innerClassName="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-4 py-2.5 rounded-[7px] flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Search & Add Icons
+        </StarBorder>
       </div>
 
       {/* Footer Info */}
-      <div className="mt-4 pt-4 border-t border-white/10 text-xs text-white/40">
-        <p>💡 Drag components to the canvas</p>
+      <div className="mt-auto pt-4 border-t border-white/10 text-xs text-white/40">
+        <p>💡 Drag shapes to the canvas</p>
       </div>
 
       {/* Resize Handle */}
@@ -259,17 +205,14 @@ const MobileBottomBar = ({
   saveStatus,
   onManualSave,
   onShare,
-  iconSearchQuery,
-  setIconSearchQuery,
   symbols,
-  filteredIcons,
   onDragStart,
   statusInfo,
   mobileTab,
   setMobileTab,
   isMobileExpanded,
   setIsMobileExpanded,
-  iconCount,
+  onOpenIconsModal,
 }) => (
   <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-neutral-900 border-t border-white/10">
     {/* Expanded Panel */}
@@ -278,19 +221,19 @@ const MobileBottomBar = ({
         {/* Tab Content */}
         {mobileTab === "shapes" && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-white/80 mb-3">Shapes</h3>
+            <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Shapes & Symbols</h3>
             <div className="grid grid-cols-4 gap-2">
               {symbols.map((symbol) => (
                 <div
                   key={symbol.id}
-                  className="flex flex-col items-center gap-1 p-3 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 active:bg-neutral-600 transition-colors"
+                  className="flex flex-col items-center justify-center p-3.5 bg-neutral-850 border border-white/5 rounded-xl cursor-grab hover:bg-neutral-800 active:bg-neutral-700 transition-all text-center relative group"
                   draggable
-                  onDragStart={(event) => onDragStart(event, symbol.type)}
+                  onDragStart={(event) => onDragStart(event, symbol.type, symbol.arrowType)}
                 >
                   <span className="text-2xl">{symbol.icon}</span>
-                  <span className="text-[10px] font-medium text-white/70 text-center">
+                  <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-neutral-950 border border-white/10 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
                     {symbol.label}
-                  </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -298,60 +241,32 @@ const MobileBottomBar = ({
         )}
 
         {mobileTab === "icons" && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-white/80">Icons</h3>
-            {/* Search */}
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
-              <input
-                type="text"
-                value={iconSearchQuery}
-                onChange={(e) => setIconSearchQuery(e.target.value)}
-                placeholder="Search icons..."
-                className="w-full pl-9 pr-8 py-2 bg-neutral-800 border border-white/10 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
-              />
-              {iconSearchQuery && (
-                <button
-                  onClick={() => setIconSearchQuery("")}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-white/10 rounded transition-colors"
-                >
-                  <CloseIcon className="h-4 w-4 text-white/40" />
-                </button>
-              )}
-            </div>
-            {/* Icons Grid */}
-            {filteredIcons.length > 0 ? (
-              <div className="grid grid-cols-5 gap-2">
-                {filteredIcons.map((iconItem) => (
-                  <div
-                    key={iconItem.id}
-                    className="flex flex-col items-center gap-1 p-2 bg-neutral-800 rounded-lg border border-white/10 cursor-grab hover:bg-neutral-700 active:bg-neutral-600 transition-all"
-                    draggable
-                    onDragStart={(event) =>
-                      onDragStart(event, "iconNode", iconItem)
-                    }
-                  >
-                    <img
-                      src={iconItem.icon}
-                      alt={iconItem.name}
-                      className="w-8 h-8 object-contain pointer-events-none"
-                      draggable={false}
-                    />
-                    <span className="text-[9px] font-medium text-white/70 text-center truncate w-full">
-                      {iconItem.name}
-                    </span>
-                  </div>
-                ))}
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-6 text-white/40">
-                <SearchIcon className="h-6 w-6 mb-2" />
-                <p className="text-xs">No icons found</p>
-              </div>
-            )}
-            <div className="text-xs text-white/40 text-center">
-              {filteredIcons.length} of {iconCount} icons
+              <h3 className="text-sm font-semibold text-white">Technology Icons</h3>
             </div>
+            <p className="text-xs text-white/50 mb-3">Browse and add custom tech logos/icons directly to your diagram</p>
+            <StarBorder
+              onClick={() => {
+                setIsMobileExpanded(false); // Auto collapse mobile panel
+                onOpenIconsModal();
+              }}
+              color="#e9d5ff"
+              speed="4s"
+              thickness={2}
+              className="w-full rounded-lg shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
+              innerClassName="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-4 py-2.5 rounded-[7px] flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Open Icons Directory
+            </StarBorder>
           </div>
         )}
 
@@ -380,7 +295,7 @@ const MobileBottomBar = ({
               onClick={onManualSave}
               disabled={saveStatus === "saving" || saveStatus === "saved"}
               className={`
-                w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors cursor-pointer
                 ${
                   saveStatus === "unsaved"
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -426,7 +341,7 @@ const MobileBottomBar = ({
             setIsMobileExpanded(true);
           }
         }}
-        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
           mobileTab === "shapes" && isMobileExpanded
             ? "bg-blue-600/20 text-blue-400"
             : "text-white/60 hover:text-white hover:bg-white/5"
@@ -445,7 +360,7 @@ const MobileBottomBar = ({
             setIsMobileExpanded(true);
           }
         }}
-        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
           mobileTab === "icons" && isMobileExpanded
             ? "bg-blue-600/20 text-blue-400"
             : "text-white/60 hover:text-white hover:bg-white/5"
@@ -464,7 +379,7 @@ const MobileBottomBar = ({
             setIsMobileExpanded(true);
           }
         }}
-        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors relative ${
+        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors relative cursor-pointer ${
           mobileTab === "info" && isMobileExpanded
             ? "bg-blue-600/20 text-blue-400"
             : "text-white/60 hover:text-white hover:bg-white/5"
@@ -480,7 +395,7 @@ const MobileBottomBar = ({
       {/* Collapse/Expand indicator */}
       <button
         onClick={() => setIsMobileExpanded(!isMobileExpanded)}
-        className="flex flex-col items-center gap-1 px-3 py-2 text-white/40 hover:text-white/60 transition-colors"
+        className="flex flex-col items-center gap-1 px-3 py-2 text-white/40 hover:text-white/60 transition-colors cursor-pointer"
       >
         {isMobileExpanded ? (
           <ChevronDownIcon className="h-5 w-5" />
@@ -492,8 +407,7 @@ const MobileBottomBar = ({
   </div>
 );
 
-const Sidebar = ({ currentProject, saveStatus, onManualSave, onShare }) => {
-  const [iconSearchQuery, setIconSearchQuery] = useState("");
+const Sidebar = ({ currentProject, saveStatus, onManualSave, onShare, onOpenIconsModal }) => {
   const [mobileTab, setMobileTab] = useState("shapes"); // 'shapes', 'icons', 'info'
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
@@ -505,19 +419,20 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave, onShare }) => {
     { id: "circle", type: "circle", label: "Circle", icon: "⚪" },
     { id: "diamond", type: "diamond", label: "Diamond", icon: "♦️" },
     { id: "textNode", type: "textNode", label: "Text Box", icon: "📝" },
+    { id: "arrow-right", type: "arrowNode", label: "Right Arrow", icon: "➡️", arrowType: "right" },
+    { id: "arrow-left", type: "arrowNode", label: "Left Arrow", icon: "⬅️", arrowType: "left" },
+    { id: "arrow-straight", type: "arrowNode", label: "Straight Arrow", icon: "↔️", arrowType: "straight" },
+    { id: "arrow-breaking", type: "arrowNode", label: "Breaking Arrow", icon: "↩️", arrowType: "breaking" },
   ];
 
-  // Filter icons based on search query
-  const filteredIcons = useMemo(() => {
-    return searchIcons(iconSearchQuery);
-  }, [iconSearchQuery]);
-
-  const onDragStart = (event, nodeType, iconData = null) => {
+  const onDragStart = (event, nodeType, extraData = null) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
-    if (iconData) {
+    if (nodeType === "arrowNode") {
+      event.dataTransfer.setData("application/arrow-type", extraData);
+    } else if (extraData) {
       event.dataTransfer.setData(
         "application/icon-data",
-        JSON.stringify(iconData),
+        JSON.stringify(extraData),
       );
     }
     event.dataTransfer.effectAllowed = "move";
@@ -596,32 +511,26 @@ const Sidebar = ({ currentProject, saveStatus, onManualSave, onShare }) => {
         saveStatus={saveStatus}
         onManualSave={onManualSave}
         onShare={onShare}
-        iconSearchQuery={iconSearchQuery}
-        setIconSearchQuery={setIconSearchQuery}
         symbols={symbols}
-        filteredIcons={filteredIcons}
         onDragStart={onDragStart}
         statusInfo={statusInfo}
-        iconCount={ICONS.length}
         sidebarWidth={sidebarWidth}
         onResizeMouseDown={handleResizeMouseDown}
+        onOpenIconsModal={onOpenIconsModal}
       />
       <MobileBottomBar
         currentProject={currentProject}
         saveStatus={saveStatus}
         onManualSave={onManualSave}
         onShare={onShare}
-        iconSearchQuery={iconSearchQuery}
-        setIconSearchQuery={setIconSearchQuery}
         symbols={symbols}
-        filteredIcons={filteredIcons}
         onDragStart={onDragStart}
         statusInfo={statusInfo}
         mobileTab={mobileTab}
         setMobileTab={setMobileTab}
         isMobileExpanded={isMobileExpanded}
         setIsMobileExpanded={setIsMobileExpanded}
-        iconCount={ICONS.length}
+        onOpenIconsModal={onOpenIconsModal}
       />
     </>
   );

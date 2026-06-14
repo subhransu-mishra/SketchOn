@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect,useMemo, useCallback, useRef } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
@@ -16,6 +16,7 @@ import StarBorder from "../../components/StarBorder";
 import { useDiagramService } from "../../services/diagramService";
 import { loadingManager } from "../../services/apiUtils";
 import { toast } from "react-toastify";
+import { searchIcons } from "../../data/icons";
 
 const CanvasPage = () => {
   const { isSignedIn, user } = useUser();
@@ -28,6 +29,12 @@ const CanvasPage = () => {
   const [profileLoading, setProfileLoading] = useState(true);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showGuidance, setShowGuidance] = useState(false);
+  const [showIconsModal, setShowIconsModal] = useState(false);
+  const [iconSearchQuery, setIconSearchQuery] = useState("");
+
+  const filteredIcons = useMemo(() => {
+    return searchIcons(iconSearchQuery);
+  }, [iconSearchQuery]);
 
   const [showTitleModal, setShowTitleModal] = useState(false);
   const [currentProject, setCurrentProject] = useState(null);
@@ -435,6 +442,7 @@ const CanvasPage = () => {
           saveStatus={saveStatus}
           onManualSave={handleManualSave}
           onShare={handleShare}
+          onOpenIconsModal={() => setShowIconsModal(true)}
         />
         {/* Add padding bottom on mobile for the bottom bar */}
         <div className="flex-1 h-full md:pb-0 pb-24 relative">
@@ -705,11 +713,11 @@ const CanvasPage = () => {
             </div>
             <div className="flex gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400">2</span>
-              <p><strong>Add Connections:</strong> Hover over any node, drag a wire from any handle and connect it to another node's handles.</p>
+              <p><strong>Connections:</strong> Drag handles to connect nodes. Click a line to toggle glowing neon flow animations.</p>
             </div>
             <div className="flex gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400">3</span>
-              <p><strong>Edit Label:</strong> Double-click text or components on the canvas to edit, scale, or delete them.</p>
+              <p><strong>Write Text & Edit:</strong> Double-click empty canvas to create text nodes. Double-click components to edit label, size, or colors.</p>
             </div>
             <div className="flex gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400">4</span>
@@ -744,6 +752,139 @@ const CanvasPage = () => {
         >
           <HelpIcon className="h-5 w-5" />
         </button>
+      )}
+
+      {/* Tech Icons Search Modal */}
+      {showIconsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop with blur */}
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => {
+              setShowIconsModal(false);
+              setIconSearchQuery("");
+            }}
+          />
+
+          {/* Modal Container */}
+          <div className="relative w-full max-w-2xl mx-4 bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                  <svg className="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Search Technology Icons</h2>
+                  <p className="text-xs text-white/50">Browse and add custom tech icons to your canvas</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowIconsModal(false);
+                  setIconSearchQuery("");
+                }}
+                className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-colors cursor-pointer"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Search Input Bar */}
+            <div className="p-6 pb-0">
+              <div className="relative">
+                <svg
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  value={iconSearchQuery}
+                  onChange={(e) => setIconSearchQuery(e.target.value)}
+                  placeholder="Search architecture icons (e.g. React, Node, MongoDB, AWS, Docker...)"
+                  className="w-full pl-12 pr-10 py-3 bg-neutral-800 border border-white/10 rounded-xl text-sm text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200"
+                  autoFocus
+                />
+                {iconSearchQuery && (
+                  <button
+                    onClick={() => setIconSearchQuery("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Icons Grid Content */}
+            <div className="flex-1 overflow-y-auto p-6 min-h-[300px]">
+              {filteredIcons.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                  {filteredIcons.map((iconItem) => (
+                    <button
+                      key={iconItem.id}
+                      onClick={() => {
+                        const event = new CustomEvent("addIconToCanvas", {
+                          detail: iconItem,
+                        });
+                        window.dispatchEvent(event);
+                        toast.success(`Added ${iconItem.name} to canvas!`);
+                        setShowIconsModal(false);
+                        setIconSearchQuery("");
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 bg-neutral-800/40 hover:bg-neutral-850 border border-white/5 hover:border-purple-500/50 rounded-xl transition-all duration-200 group cursor-pointer hover:scale-105 active:scale-95"
+                    >
+                      <div className="w-12 h-12 flex items-center justify-center bg-neutral-900/50 rounded-lg p-2 border border-white/5 group-hover:border-purple-500/20">
+                        <img
+                          src={iconItem.icon}
+                          alt={iconItem.name}
+                          className="w-full h-full object-contain filter brightness-90 group-hover:brightness-100 transition-all"
+                        />
+                      </div>
+                      <span className="text-[11px] font-medium text-white/70 group-hover:text-white text-center truncate w-full">
+                        {iconItem.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-white/40">
+                  <svg
+                    className="h-12 w-12 mb-3 text-white/20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <p className="text-sm font-medium">No matching icons found</p>
+                  <p className="text-xs mt-1 text-white/30 font-light">Try searching for other developer tools or platforms</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-neutral-950/60 border-t border-white/10 text-center text-[10px] text-white/40">
+              Showing {filteredIcons.length} technology icons
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

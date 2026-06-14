@@ -16,13 +16,16 @@ import CircleNode from "./nodes/CircleNode";
 import DiamondNode from "./nodes/DiamondNode";
 import TextNode from "./nodes/TextNode";
 import IconNode from "./nodes/IconNode";
+import ArrowNode from "./nodes/ArrowNode";
+import AnimatedSvgEdge from "./AnimatedSvgEdge";
 
 const DEFAULT_NODE_STYLES = {
   rectangle: { width: 160, height: 90, color: "#2563eb" },
   circle: { width: 120, height: 120, color: "#16a34a" },
   diamond: { width: 100, height: 100, color: "#7c3aed" },
-  textNode: { width: 150, height: 70, color: "#262626" },
+  textNode: { width: 150, height: 70, color: "transparent" },
   iconNode: { width: 150, height: 180 },
+  arrowNode: { width: 160, height: 80, color: "#c084fc" },
 };
 
 const nodeTypes = {
@@ -31,6 +34,11 @@ const nodeTypes = {
   diamond: DiamondNode,
   textNode: TextNode,
   iconNode: IconNode,
+  arrowNode: ArrowNode,
+};
+
+const edgeTypes = {
+  animatedSvg: AnimatedSvgEdge,
 };
 
 let id = 0;
@@ -43,96 +51,6 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
   const initialLoadComplete = useRef(false);
   const reactFlowWrapper = useRef(null);
   const { screenToFlowPosition } = useReactFlow();
-
-  // Load project data when component mounts or projectData changes
-  useEffect(() => {
-    if (projectData && projectData.nodes && projectData.edges) {
-      isLoadingData.current = true;
-
-      // Restore nodes with their original positions and data
-      const restoredNodes = projectData.nodes.map((node) => {
-        const defaults = DEFAULT_NODE_STYLES[node.type] || {};
-        const width = node.data?.width || defaults.width;
-        const height = node.data?.height || defaults.height;
-        const color = node.data?.color || defaults.color;
-
-        return {
-          ...node,
-          // Ensure position is preserved
-          position: node.position || { x: 0, y: 0 },
-          style: {
-            ...node.style,
-            ...(width ? { width } : {}),
-            ...(height ? { height } : {}),
-          },
-          // Ensure data is preserved
-          data: {
-            ...node.data,
-            ...(color ? { color } : {}),
-            ...(width ? { width } : {}),
-            ...(height ? { height } : {}),
-            onLabelChange: onNodeLabelChange,
-            onColorChange: onNodeColorChange,
-            onResize: onNodeResize,
-          },
-        };
-      });
-
-      setNodes(restoredNodes);
-      setEdges(projectData.edges);
-
-      // Update the id counter to avoid collisions
-      const maxId = projectData.nodes.reduce((max, node) => {
-        const nodeIdNum = parseInt(node.id.replace(/\D/g, ""), 10);
-        return nodeIdNum > max ? nodeIdNum : max;
-      }, 0);
-      id = maxId + 1;
-
-      // Mark initial load as complete and reset loading flag
-      setTimeout(() => {
-        isLoadingData.current = false;
-        initialLoadComplete.current = true;
-      }, 100);
-    }
-  }, [projectData, setNodes, setEdges]);
-
-  // Notify parent component when data changes (only after user interactions)
-  useEffect(() => {
-    // Don't trigger onDataChange during initial load or when loading data from parent
-    if (onDataChange && initialLoadComplete.current && !isLoadingData.current) {
-      // Clean node data before sending to parent (remove function references)
-      const cleanNodes = nodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          onLabelChange: undefined, // Remove function reference
-          onColorChange: undefined,
-          onResize: undefined,
-        },
-      }));
-      onDataChange(cleanNodes, edges);
-    }
-  }, [nodes, edges, onDataChange]);
-
-  // Only connect when user explicitly drags from source handle to target handle
-  const onConnect = useCallback(
-    (params) => {
-      // Validate connection - only connect if both source and target handles exist
-      if (params.source && params.target && params.source !== params.target) {
-        setEdges((eds) =>
-          addEdge(
-            {
-              ...params,
-              type: "default",
-              animated: false,
-            },
-            eds,
-          ),
-        );
-      }
-    },
-    [setEdges],
-  );
 
   const onNodeLabelChange = useCallback(
     (nodeId, newLabel) => {
@@ -173,6 +91,199 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
     [setNodes],
   );
 
+  const onFontSizeChange = useCallback(
+    (nodeId, newFontSize) => {
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, fontSize: newFontSize } }
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const onTextColorChange = useCallback(
+    (nodeId, newTextColor) => {
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, textColor: newTextColor } }
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const onEdgeClick = useCallback(
+    (event, edge) => {
+      if (readOnly) return;
+      setEdges((eds) =>
+        eds.map((ed) =>
+          ed.id === edge.id
+            ? {
+                ...ed,
+                type: ed.type === "animatedSvg" ? "default" : "animatedSvg",
+                animated: ed.type === "animatedSvg" ? false : true,
+              }
+            : ed,
+        ),
+      );
+    },
+    [setEdges, readOnly],
+  );
+
+  const onPaneDoubleClick = useCallback(
+    (event) => {
+      if (readOnly) return;
+
+      if (!event.target.classList.contains("react-flow__pane")) {
+        return;
+      }
+
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      const defaults = DEFAULT_NODE_STYLES.textNode;
+      const newNode = {
+        id: getId(),
+        type: "textNode",
+        position,
+        draggable: true,
+        selectable: true,
+        style: {
+          width: defaults.width,
+          height: defaults.height,
+        },
+        data: {
+          label: "Double-click to edit text",
+          onLabelChange: onNodeLabelChange,
+          onColorChange: onNodeColorChange,
+          onResize: onNodeResize,
+          onFontSizeChange: onFontSizeChange,
+          onTextColorChange: onTextColorChange,
+          color: defaults.color,
+          fontSize: "14px",
+          textColor: "#ffffff",
+          width: defaults.width,
+          height: defaults.height,
+        },
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+    },
+    [
+      readOnly,
+      screenToFlowPosition,
+      onNodeLabelChange,
+      onNodeColorChange,
+      onNodeResize,
+      onFontSizeChange,
+      onTextColorChange,
+      setNodes,
+    ]
+  );
+
+  // Load project data when component mounts or projectData changes
+  useEffect(() => {
+    if (projectData && projectData.nodes && projectData.edges) {
+      isLoadingData.current = true;
+
+      // Restore nodes with their original positions and data
+      const restoredNodes = projectData.nodes.map((node) => {
+        const defaults = DEFAULT_NODE_STYLES[node.type] || {};
+        const width = node.data?.width || defaults.width;
+        const height = node.data?.height || defaults.height;
+        const color = node.data?.color || defaults.color;
+
+        return {
+          ...node,
+          // Ensure position is preserved
+          position: node.position || { x: 0, y: 0 },
+          style: {
+            ...node.style,
+            ...(width ? { width } : {}),
+            ...(height ? { height } : {}),
+          },
+          // Ensure data is preserved
+          data: {
+            ...node.data,
+            ...(color ? { color } : {}),
+            ...(width ? { width } : {}),
+            ...(height ? { height } : {}),
+            onLabelChange: onNodeLabelChange,
+            onColorChange: onNodeColorChange,
+            onResize: onNodeResize,
+            onFontSizeChange,
+            onTextColorChange,
+          },
+        };
+      });
+
+      setNodes(restoredNodes);
+      setEdges(projectData.edges);
+
+      // Update the id counter to avoid collisions
+      const maxId = projectData.nodes.reduce((max, node) => {
+        const nodeIdNum = parseInt(node.id.replace(/\D/g, ""), 10);
+        return nodeIdNum > max ? nodeIdNum : max;
+      }, 0);
+      id = maxId + 1;
+
+      // Mark initial load as complete and reset loading flag
+      setTimeout(() => {
+        isLoadingData.current = false;
+        initialLoadComplete.current = true;
+      }, 100);
+    }
+  }, [projectData, setNodes, setEdges, onNodeLabelChange, onNodeColorChange, onNodeResize, onFontSizeChange, onTextColorChange]);
+
+  // Notify parent component when data changes (only after user interactions)
+  useEffect(() => {
+    // Don't trigger onDataChange during initial load or when loading data from parent
+    if (onDataChange && initialLoadComplete.current && !isLoadingData.current) {
+      // Clean node data before sending to parent (remove function references)
+      const cleanNodes = nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onLabelChange: undefined, // Remove function reference
+          onColorChange: undefined,
+          onResize: undefined,
+          onFontSizeChange: undefined,
+          onTextColorChange: undefined,
+        },
+      }));
+      onDataChange(cleanNodes, edges);
+    }
+  }, [nodes, edges, onDataChange]);
+
+  // Only connect when user explicitly drags from source handle to target handle
+  const onConnect = useCallback(
+    (params) => {
+      // Validate connection - only connect if both source and target handles exist
+      if (params.source && params.target && params.source !== params.target) {
+        setEdges((eds) =>
+          addEdge(
+            {
+              ...params,
+              type: "default",
+              animated: false,
+            },
+            eds,
+          ),
+        );
+      }
+    },
+    [setEdges],
+  );
+
+
+
   // Custom nodes change handler - filter out automatic position changes during drag
   const handleNodesChange = useCallback(
     (changes) => {
@@ -211,6 +322,7 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
 
       const type = event.dataTransfer.getData("application/reactflow");
       const iconDataStr = event.dataTransfer.getData("application/icon-data");
+      const arrowType = event.dataTransfer.getData("application/arrow-type");
 
       if (typeof type === "undefined" || !type) {
         return;
@@ -246,6 +358,8 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
               iconId: iconData.id,
               onLabelChange: onNodeLabelChange,
               onResize: onNodeResize,
+              onFontSizeChange: onFontSizeChange,
+              onTextColorChange: onTextColorChange,
               width: defaults.width,
               height: defaults.height,
             },
@@ -261,6 +375,7 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
           circle: "Circle",
           diamond: "Diamond",
           textNode: "Text",
+          arrowNode: "Arrow",
         };
 
         const defaults = DEFAULT_NODE_STYLES[type] || {};
@@ -279,9 +394,12 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
             onLabelChange: onNodeLabelChange,
             onColorChange: onNodeColorChange,
             onResize: onNodeResize,
+            onFontSizeChange: onFontSizeChange,
+            onTextColorChange: onTextColorChange,
             ...(defaults.color ? { color: defaults.color } : {}),
             ...(defaults.width ? { width: defaults.width } : {}),
             ...(defaults.height ? { height: defaults.height } : {}),
+            ...(arrowType ? { arrowType } : {}),
           },
         };
       }
@@ -293,6 +411,8 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
       onNodeLabelChange,
       onNodeColorChange,
       onNodeResize,
+      onFontSizeChange,
+      onTextColorChange,
       screenToFlowPosition,
     ],
   );
@@ -341,6 +461,8 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
           iconId: iconData.id,
           onLabelChange: onNodeLabelChange,
           onResize: onNodeResize,
+          onFontSizeChange,
+          onTextColorChange,
           width: defaults.width,
           height: defaults.height,
         },
@@ -353,7 +475,7 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
     return () => {
       window.removeEventListener("addIconToCanvas", handleAddIconToCanvas);
     };
-  }, [setNodes, onNodeLabelChange, onNodeResize]);
+  }, [setNodes, onNodeLabelChange, onNodeResize, onFontSizeChange, onTextColorChange]);
 
   return (
     <div className="flex-1 h-full" ref={reactFlowWrapper}>
@@ -371,6 +493,8 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
             onLabelChange: onNodeLabelChange,
             onColorChange: onNodeColorChange,
             onResize: onNodeResize,
+            onFontSizeChange,
+            onTextColorChange,
           },
         }))}
         edges={edges}
@@ -382,7 +506,10 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
         onNodeDragStart={readOnly ? undefined : onNodeDragStart}
         onNodeDrag={readOnly ? undefined : onNodeDrag}
         onNodeDragStop={readOnly ? undefined : onNodeDragStop}
+        onPaneDoubleClick={readOnly ? undefined : onPaneDoubleClick}
+        onEdgeClick={readOnly ? undefined : onEdgeClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         connectionMode={ConnectionMode.Loose}
         snapToGrid={true}
         snapGrid={[15, 15]}
