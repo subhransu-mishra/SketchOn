@@ -8,6 +8,19 @@ const userSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    email: {
+      type: String,
+    },
+    firstName: {
+      type: String,
+    },
+    lastName: {
+      type: String,
+    },
+    welcomeEmailSent: {
+      type: Boolean,
+      default: false,
+    },
     credits: {
       type: Number,
       default: 10,

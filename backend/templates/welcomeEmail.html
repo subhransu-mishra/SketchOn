@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to SketchOn!</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.025);
+        }
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            font-size: 28px;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        .content {
+            padding: 40px 32px;
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: #1e293b;
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .content p {
+            margin-top: 0;
+            margin-bottom: 24px;
+            font-size: 16px;
+            color: #475569;
+        }
+        .card {
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-left: 4px solid #4f46e5;
+        }
+        .card p {
+            margin: 0;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .cta-container {
+            text-align: center;
+            margin: 32px 0 16px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #4f46e5;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
+            text-align: center;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 24px 32px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .footer p {
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SketchOn</h1>
+        </div>
+        <div class="content">
+            <h2>Hi {{firstName}},</h2>
+            <p>Welcome to SketchOn! We are absolutely thrilled to have you join our community of creators, visual thinkers, and designers.</p>
+            <p>SketchOn is a collaborative workspace that makes it incredibly easy to bring your ideas to life. Whether you are brainstorming, drawing diagrams, or developing architectural models, SketchOn gives you the canvas and tools you need to think visually.</p>
+            
+            <div class="card">
+                <p>🎁 Special Welcome Gift: As a new member, we've added 2 free projects (credits) to your account so you can start creating immediately!</p>
+            </div>
+            
+            <p>Ready to start sketching? Click the button below to head to your dashboard and create your first canvas.</p>
+            
+            <div class="cta-container">
+                <a href="{{dashboardUrl}}" class="cta-button" target="_blank">Go to Dashboard</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>This email was sent to you by SketchOn.</p>
+            <p>&copy; 2026 SketchOn. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

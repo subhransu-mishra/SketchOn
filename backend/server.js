@@ -39,7 +39,13 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -101,6 +107,7 @@ app.get("/health", (req, res) => {
 app.use("/api/diagrams", require("./routes/diagramRoutes.js"));
 app.use("/api/ai", require("./routes/aiRoutes.js"));
 app.use("/api/users", require("./routes/userRoutes.js"));
+app.use("/api/webhooks", require("./routes/webhookRoutes.js"));
 
 
 // Debug routes in development
