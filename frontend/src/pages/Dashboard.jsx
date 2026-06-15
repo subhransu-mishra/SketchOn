@@ -43,7 +43,7 @@ const Dashboard = () => {
       }
     };
     loadProfile();
-  }, [isLoaded, isSignedIn, user, isReady, diagramService]);
+  }, [isLoaded, isSignedIn, user, isReady, diagramService, retryCount]);
 
   // Load projects from API on component mount
   useEffect(() => {

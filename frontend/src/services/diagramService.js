@@ -255,7 +255,7 @@ class DiagramService {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        timeout: 15000,
+        timeout: 45000,
       },
       0
     );
@@ -280,7 +280,7 @@ class DiagramService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(diagramData),
-        timeout: 15000,
+        timeout: 45000,
       },
       0
     );
@@ -340,7 +340,7 @@ class DiagramService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(sanitizedData),
-        timeout: 20000,
+        timeout: 45000,
       },
       0
     );
@@ -392,7 +392,7 @@ class DiagramService {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        timeout: 15000,
+        timeout: 45000,
       },
       0
     );
@@ -419,7 +419,7 @@ class DiagramService {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        timeout: 15000,
+        timeout: 30000,
       },
       3,
       1000
@@ -448,7 +448,7 @@ class DiagramService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ amount }),
-        timeout: 15000,
+        timeout: 30000,
       },
       0
     );
@@ -476,7 +476,7 @@ class DiagramService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ isSubscribed, plan }),
-        timeout: 15000,
+        timeout: 30000,
       },
       0
     );
