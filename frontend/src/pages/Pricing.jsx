@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,25 +16,46 @@ import {
 } from "react-icons/fi";
 import { useDiagramService } from "../services/diagramService";
 import { toast } from "react-toastify";
+import StarBorder from "../components/StarBorder";
 
 const Pricing = () => {
   const navigate = useNavigate();
-  const { diagramService, isReady, isSignedIn } = useDiagramService();
+  const { diagramService, isReady, isSignedIn, user } = useDiagramService();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isAnnual, setIsAnnual] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card"); // "card" or "upi"
   const [paymentStep, setPaymentStep] = useState("pricing"); // "pricing", "checkout", "processing", "success"
   const [sandboxLoading, setSandboxLoading] = useState(false);
-  
-  // Card form state
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [cardFocused, setCardFocused] = useState(false);
+  const [dbUser, setDbUser] = useState(null);
 
-  // UPI state
-  const [upiId, setUpiId] = useState("");
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (isSignedIn && isReady) {
+        try {
+          const profile = await diagramService.getUserProfile();
+          setDbUser(profile.data);
+        } catch (error) {
+          console.error("Failed to fetch user profile:", error);
+        }
+      }
+    };
+    fetchProfile();
+  }, [isSignedIn, isReady, diagramService]);
+  
+  // Load Razorpay script
+  useEffect(() => {
+    const loadRazorpay = () => {
+      if (document.getElementById('razorpay-checkout-script')) {
+        return;
+      }
+      const script = document.createElement('script');
+      script.id = 'razorpay-checkout-script';
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      document.body.appendChild(script);
+    };
+    loadRazorpay();
+  }, []);
 
   const plans = [
     {
@@ -110,67 +131,87 @@ const Pricing = () => {
     }
   ];
 
-  const handleSelectPlan = (plan) => {
+  const handleSelectPlan = async (plan) => {
     if (plan.id === "free") {
       navigate("/dashboard");
-    } else {
-      setSelectedPlan(plan);
-      setPaymentStep("checkout");
+      return;
     }
-  };
-
-  const formatCardNumber = (value) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || "";
-    const parts = [];
-
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-
-    if (parts.length > 0) {
-      return parts.join(" ");
-    } else {
-      return v;
-    }
-  };
-
-  const handleCardNumberChange = (e) => {
-    const formatted = formatCardNumber(e.target.value);
-    if (formatted.length <= 19) {
-      setCardNumber(formatted);
-    }
-  };
-
-  const handleExpiryChange = (e) => {
-    let value = e.target.value.replace(/[^0-9]/g, "");
-    if (value.length > 2) {
-      value = value.slice(0, 2) + "/" + value.slice(2, 4);
-    }
-    if (value.length <= 5) {
-      setExpiry(value);
-    }
-  };
-
-  const handlePaymentSubmit = (e) => {
-    e.preventDefault();
-    setPaymentStep("processing");
     
-    // Simulate payment process
-    setTimeout(async () => {
-      try {
-        if (isSignedIn && isReady) {
-          const planCode = selectedPlan.id === "professional" ? "pro" : "starter";
-          await diagramService.toggleSubscription(true, planCode);
-          toast.success(`Upgraded to ${selectedPlan.name}!`);
-        }
-      } catch (err) {
-        console.error("Failed to upgrade subscription in database:", err);
-        toast.error("Billing simulation saved locally but DB sync failed.");
+    if (!isSignedIn || !isReady) {
+      toast.error("Please sign in to upgrade");
+      return;
+    }
+
+    setSelectedPlan(plan);
+    setPaymentStep("processing");
+
+    try {
+      // Create order via backend
+      const response = await diagramService.createRazorpayOrder(plan.id, isAnnual);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to create order");
       }
-      setPaymentStep("success");
-    }, 2500);
+
+      const { order } = response.data;
+
+      // Initialize Razorpay
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "SketchOn",
+        description: `Upgrade to ${plan.name} Plan`,
+        image: "/logo.png",
+        order_id: order.id,
+        handler: async function (paymentResponse) {
+          try {
+            setPaymentStep("processing");
+            const verifyRes = await diagramService.verifyRazorpayPayment({
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
+              planId: plan.id
+            });
+
+            if (verifyRes.success) {
+              toast.success(`Successfully upgraded to ${plan.name}!`);
+              setPaymentStep("success");
+            } else {
+              throw new Error("Payment verification failed");
+            }
+          } catch (error) {
+            console.error("Verification error:", error);
+            toast.error("Payment verification failed. Contact support if amount was deducted.");
+            setPaymentStep("pricing");
+          }
+        },
+        prefill: {
+          name: "",
+          email: "",
+          contact: ""
+        },
+        theme: {
+          color: "#4f46e5"
+        },
+        modal: {
+          ondismiss: function() {
+            setPaymentStep("pricing");
+            toast.info("Payment cancelled");
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response){
+        toast.error(`Payment failed: ${response.error.description}`);
+        setPaymentStep("pricing");
+      });
+      rzp.open();
+    } catch (error) {
+      console.error("Order creation error:", error);
+      toast.error(error.message || "Failed to initialize payment");
+      setPaymentStep("pricing");
+    }
   };
 
   // Inline Confetti implementation using pure CSS/SVG inside Framer Motion
@@ -388,265 +429,41 @@ const Pricing = () => {
                         </div>
 
                         {/* CTA button */}
-                        <button
-                          onClick={() => handleSelectPlan(plan)}
-                          className={`w-full py-3.5 px-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer ${
-                            plan.popular
-                              ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:brightness-110 shadow-lg shadow-indigo-500/20"
-                              : plan.id === "free"
-                              ? "bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                              : "bg-white text-neutral-950 hover:bg-white/90"
-                          }`}
-                        >
-                          {plan.actionLabel}
-                          <FiArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                        </button>
+                        {plan.id === "free" ? (
+                          <StarBorder
+                            as="button"
+                            onClick={() => handleSelectPlan(plan)}
+                            color="#ffffff"
+                            speed="4s"
+                            thickness={1.5}
+                            className="w-full rounded-xl shadow-lg"
+                            innerClassName="w-full bg-white/5 hover:bg-white/10 text-white text-sm font-semibold px-4 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors border border-white/10"
+                          >
+                            {plan.actionLabel}
+                            <FiArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                          </StarBorder>
+                        ) : (
+                          <StarBorder
+                            as="button"
+                            onClick={() => {
+                              const isCurrentOrHigher = dbUser && (dbUser.plan === plan.id || (dbUser.plan === "professional" && plan.id === "starter") || (dbUser.plan === "pro" && plan.id === "starter"));
+                              if (!isCurrentOrHigher) handleSelectPlan(plan);
+                            }}
+                            disabled={dbUser && (dbUser.plan === plan.id || (dbUser.plan === "professional" && plan.id === "starter") || (dbUser.plan === "pro" && plan.id === "starter"))}
+                            color={plan.popular ? "#3b82f6" : "#ffffff"}
+                            speed="4s"
+                            thickness={1.5}
+                            className={`w-full rounded-xl ${(dbUser && (dbUser.plan === plan.id || (dbUser.plan === "professional" && plan.id === "starter") || (dbUser.plan === "pro" && plan.id === "starter"))) ? "opacity-50 cursor-not-allowed" : "shadow-lg"}`}
+                            innerClassName={`w-full ${plan.popular ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-white hover:bg-white/95 text-neutral-950"} text-sm font-semibold px-4 py-3.5 rounded-xl flex items-center justify-center gap-2 ${(dbUser && (dbUser.plan === plan.id || (dbUser.plan === "professional" && plan.id === "starter") || (dbUser.plan === "pro" && plan.id === "starter"))) ? "" : "cursor-pointer"} transition-colors`}
+                          >
+                            {(dbUser && (dbUser.plan === plan.id || (dbUser.plan === "professional" && plan.id === "starter") || (dbUser.plan === "pro" && plan.id === "starter"))) ? "Upgraded" : plan.actionLabel}
+                            {!(dbUser && (dbUser.plan === plan.id || (dbUser.plan === "professional" && plan.id === "starter") || (dbUser.plan === "pro" && plan.id === "starter"))) && <FiArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
+                          </StarBorder>
+                        )}
                       </div>
                     </motion.div>
                   );
                 })}
-              </div>
-            </motion.div>
-          )}
-
-          {paymentStep === "checkout" && selectedPlan && (
-            <motion.div
-              key="checkout-step"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.4 }}
-              className="w-full max-w-4xl bg-neutral-900 border border-white/5 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden"
-            >
-              {/* Back to pricing */}
-              <button
-                onClick={() => setPaymentStep("pricing")}
-                className="absolute top-6 left-6 text-sm text-white/60 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <FiArrowLeft /> Back to Plans
-              </button>
-
-              <div className="grid md:grid-cols-12 gap-8 mt-6">
-                
-                {/* Left Side: Summary & Options */}
-                <div className="md:col-span-5 flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/5 pb-8 md:pb-0 md:pr-8">
-                  <div>
-                    <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-                    
-                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4 mb-6">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-bold text-white">{selectedPlan.name} Plan</p>
-                          <p className="text-xs text-white/50">{isAnnual ? "Yearly billing" : "Monthly billing"}</p>
-                        </div>
-                        <span className="font-semibold text-indigo-400">
-                          ₹{isAnnual ? Math.round(selectedPlan.price * 0.8 * 12) : selectedPlan.price}
-                        </span>
-                      </div>
-                      <div className="w-full h-px bg-white/5 my-3" />
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/60">Subtotal</span>
-                        <span>₹{isAnnual ? Math.round(selectedPlan.price * 0.8 * 12) : selectedPlan.price}</span>
-                      </div>
-                      <div className="flex justify-between text-sm mt-1">
-                        <span className="text-white/60">GST (Included)</span>
-                        <span>₹0</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Payment Method Selector */}
-                  <div>
-                    <p className="text-sm font-semibold text-white/60 mb-3">Select Payment Method</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("card")}
-                        className={`flex flex-col items-center justify-center p-4 rounded-xl border text-sm gap-2 transition-all cursor-pointer ${
-                          paymentMethod === "card"
-                            ? "bg-indigo-600/15 border-indigo-500/80 text-white"
-                            : "bg-white/5 border-white/5 text-white/60 hover:border-white/10"
-                        }`}
-                      >
-                        <FiCreditCard className="h-5 w-5" />
-                        <span>Credit / Debit Card</span>
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("upi")}
-                        className={`flex flex-col items-center justify-center p-4 rounded-xl border text-sm gap-2 transition-all cursor-pointer ${
-                          paymentMethod === "upi"
-                            ? "bg-indigo-600/15 border-indigo-500/80 text-white"
-                            : "bg-white/5 border-white/5 text-white/60 hover:border-white/10"
-                        }`}
-                      >
-                        <FiSmartphone className="h-5 w-5" />
-                        <span>UPI Payment</span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-xs text-white/40 mt-6 justify-center">
-                      <FiLock className="h-3.5 w-3.5" /> Secure 256-bit SSL encrypted checkout
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Side: Payment Forms */}
-                <div className="md:col-span-7 flex flex-col justify-center">
-                  {paymentMethod === "card" ? (
-                    <form onSubmit={handlePaymentSubmit} className="space-y-5">
-                      
-                      {/* Premium 3D-Like Glassmorphic Credit Card Preview */}
-                      <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 p-6 shadow-xl border border-white/10 overflow-hidden flex flex-col justify-between group">
-                        
-                        {/* Shimmer overlay effect */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
-                        
-                        {/* Micro Chip & Contactless */}
-                        <div className="flex justify-between items-start relative z-10">
-                          <div className="w-10 h-7 rounded bg-amber-400/80 backdrop-blur-sm shadow border border-amber-300/30 flex items-center justify-center overflow-hidden">
-                            <div className="grid grid-cols-3 w-8 h-5 gap-0.5 opacity-40">
-                              {[...Array(6)].map((_, i) => (
-                                <div key={i} className="border border-neutral-900/20" />
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 opacity-80">
-                            <div className="w-3 h-3 rounded-full bg-white/20" />
-                            <div className="w-6 h-4 rounded-full bg-white/80 mix-blend-screen" />
-                          </div>
-                        </div>
-
-                        {/* Card Number */}
-                        <div className="my-2 relative z-10">
-                          <p className="text-xl font-bold tracking-widest font-mono text-white/95">
-                            {cardNumber || "•••• •••• •••• ••••"}
-                          </p>
-                        </div>
-
-                        {/* Holder and Expiry */}
-                        <div className="flex justify-between items-end relative z-10">
-                          <div>
-                            <p className="text-[9px] uppercase tracking-wider text-white/60">Card Holder</p>
-                            <p className="text-xs font-semibold uppercase tracking-wide truncate max-w-[180px]">
-                              {cardName || "Your Name"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] uppercase tracking-wider text-white/60">Expires</p>
-                            <p className="text-xs font-semibold tracking-wide font-mono">
-                              {expiry || "MM/YY"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] uppercase tracking-wider text-white/60">CVV</p>
-                            <p className="text-xs font-semibold tracking-wide font-mono">
-                              {cvv ? "•••" : "•••"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Inputs */}
-                      <div className="space-y-3.5">
-                        <div>
-                          <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider">Cardholder Name</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="e.g. Subhransu Mishra"
-                            value={cardName}
-                            onChange={(e) => setCardName(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/80 transition-colors placeholder:text-white/30"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider">Card Number</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="0000 0000 0000 0000"
-                            value={cardNumber}
-                            onChange={handleCardNumberChange}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/80 transition-colors placeholder:text-white/30 font-mono"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider">Expiration Date</label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="MM/YY"
-                              value={expiry}
-                              onChange={handleExpiryChange}
-                              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/80 transition-colors placeholder:text-white/30 text-center font-mono"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider">CVV</label>
-                            <input
-                              type="password"
-                              required
-                              maxLength="3"
-                              placeholder="•••"
-                              value={cvv}
-                              onChange={(e) => setCvv(e.target.value.replace(/[^0-9]/g, ""))}
-                              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/80 transition-colors placeholder:text-white/30 text-center font-mono"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-sm font-semibold hover:brightness-110 transition-all duration-300 shadow-lg shadow-indigo-500/20 cursor-pointer"
-                      >
-                        Authorize & Pay ₹{isAnnual ? Math.round(selectedPlan.price * 0.8 * 12) : selectedPlan.price}
-                      </button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handlePaymentSubmit} className="space-y-6 flex flex-col items-center">
-                      
-                      {/* UPI/QR Simulation */}
-                      <div className="p-4 bg-white rounded-2xl shadow-xl flex items-center justify-center border border-white/10 w-48 h-48 relative overflow-hidden group">
-                        <img 
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=upi://pay?pa=sketchon@paytm%26pn=SketchOn%26am=${isAnnual ? Math.round(selectedPlan.price * 0.8 * 12) : selectedPlan.price}%26cu=INR`} 
-                          alt="Payment QR Code" 
-                          className="w-40 h-40"
-                        />
-                        <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all p-3 text-center pointer-events-none">
-                          <p className="text-xs font-semibold text-white">Scan with GPay, PhonePe, Paytm, or BHIM</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-white/50 text-center -mt-2">Scan QR code to pay using any UPI app</p>
-
-                      <div className="w-full h-px bg-white/5" />
-
-                      <div className="w-full">
-                        <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider text-left">Or enter UPI ID</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. subhransu@paytm"
-                          value={upiId}
-                          onChange={(e) => setUpiId(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/80 transition-colors placeholder:text-white/30 text-center"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-sm font-semibold hover:brightness-110 transition-all duration-300 shadow-lg shadow-indigo-500/20 cursor-pointer"
-                      >
-                        Verify & Pay ₹{isAnnual ? Math.round(selectedPlan.price * 0.8 * 12) : selectedPlan.price}
-                      </button>
-                    </form>
-                  )}
-                </div>
               </div>
             </motion.div>
           )}
@@ -689,7 +506,7 @@ const Pricing = () => {
               <div className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 mb-6 text-left text-sm space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-white/50">Receipt To:</span>
-                  <span>{cardName || upiId || "Valued Customer"}</span>
+                  <span>{user?.firstName || "Valued Customer"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white/50">Plan Upgraded:</span>

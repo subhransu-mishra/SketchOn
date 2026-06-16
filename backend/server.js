@@ -108,6 +108,7 @@ app.use("/api/diagrams", require("./routes/diagramRoutes.js"));
 app.use("/api/ai", require("./routes/aiRoutes.js"));
 app.use("/api/users", require("./routes/userRoutes.js"));
 app.use("/api/webhooks", require("./routes/webhookRoutes.js"));
+app.use("/api/payment", require("./routes/paymentRoutes.js"));
 
 
 // Debug routes in development

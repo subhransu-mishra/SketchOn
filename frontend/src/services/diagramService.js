@@ -484,6 +484,62 @@ class DiagramService {
     return await this.parseResponse(response, "toggleSubscription");
   }
 
+  // Create Razorpay Order
+  async createRazorpayOrder(planId, isAnnual = false) {
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
+
+    const token = await this.getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
+
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/payment/create-order`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ planId, isAnnual }),
+        timeout: 30000,
+      },
+      0
+    );
+
+    return await this.parseResponse(response, "createRazorpayOrder");
+  }
+
+  // Verify Razorpay Payment
+  async verifyRazorpayPayment(paymentData) {
+    if (!this.getAuthToken) {
+      throw new Error("Authentication not initialized. Please sign in.");
+    }
+
+    const token = await this.getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
+
+    const response = await this.fetchWithRetry(
+      `${API_BASE_URL}/payment/verify`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paymentData),
+        timeout: 30000,
+      },
+      0
+    );
+
+    return await this.parseResponse(response, "verifyRazorpayPayment");
+  }
+
   // Test API connectivity and configuration
   async testConnection() {
     try {
