@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   useNodesState,
   useEdgesState,
@@ -47,10 +47,12 @@ const getId = () => `dndnode_${id++}`;
 const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [selectedElements, setSelectedElements] = useState({ nodes: [], edges: [] });
   const isLoadingData = useRef(false);
   const initialLoadComplete = useRef(false);
   const reactFlowWrapper = useRef(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const reactFlowInstance = useReactFlow();
+  const { screenToFlowPosition } = reactFlowInstance;
 
   const onNodeLabelChange = useCallback(
     (nodeId, newLabel) => {
@@ -315,6 +317,20 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
     [onEdgesChange],
   );
 
+  const onSelectionChange = useCallback((params) => {
+    setSelectedElements(params);
+  }, []);
+
+  const handleDeleteSelected = useCallback(() => {
+    if (reactFlowInstance && !readOnly) {
+      reactFlowInstance.deleteElements({
+        nodes: selectedElements.nodes,
+        edges: selectedElements.edges,
+      });
+      setSelectedElements({ nodes: [], edges: [] });
+    }
+  }, [reactFlowInstance, selectedElements, readOnly]);
+
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
@@ -553,6 +569,7 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
         edges={edges}
         onNodesChange={readOnly ? undefined : handleNodesChange}
         onEdgesChange={readOnly ? undefined : handleEdgesChange}
+        onSelectionChange={onSelectionChange}
         onConnect={readOnly ? undefined : onConnect}
         onDrop={readOnly ? undefined : onDrop}
         onDragOver={readOnly ? undefined : onDragOver}
@@ -588,6 +605,25 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
         <Controls className="bg-neutral-800 border border-white/10 [&>button]:bg-neutral-800 [&>button]:border-white/10 [&>button]:text-white [&>button:hover]:bg-neutral-700" />
         <Background color="#404040" gap={15} />
       </ReactFlow>
+
+      {/* Mobile Action Bar for Selected Elements */}
+      {!readOnly && (selectedElements.nodes.length > 0 || selectedElements.edges.length > 0) && (
+        <div className="md:hidden absolute bottom-24 left-1/2 transform -translate-x-1/2 z-50 bg-neutral-800/95 backdrop-blur-md border border-white/10 rounded-full px-5 py-2.5 shadow-xl flex items-center gap-4 animate-in slide-in-from-bottom-5">
+          <span className="text-xs font-semibold text-white/80 whitespace-nowrap">
+            {selectedElements.nodes.length + selectedElements.edges.length} selected
+          </span>
+          <div className="w-px h-4 bg-white/10" />
+          <button
+            onClick={handleDeleteSelected}
+            className="flex items-center justify-center p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+            title="Delete Selected"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
