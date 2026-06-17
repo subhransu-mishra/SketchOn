@@ -17,6 +17,10 @@ import {
   FiPenTool,
   FiMenu,
   FiX,
+  FiStar,
+  FiCreditCard,
+  FiShield,
+  FiLayout,
 } from "react-icons/fi";
 import StarBorder from "./StarBorder";
 
@@ -35,12 +39,164 @@ const featureLines = [
   "Collaborate and refine ideas in real time",
 ];
 
-const canvasItems = [
-  { name: "User Flow Diagram",  type: "Wireframe",     status: "Analyzing", progress: 85  },
-  { name: "Component Library",  type: "Design System", status: "Optimized", progress: 100 },
-  { name: "Dashboard Layout",   type: "Interface",     status: "Refining",  progress: 65  },
-  { name: "API Architecture",   type: "System Design", status: "Complete",  progress: 100 },
-];
+// ─── MiniCanvasPreview ───────────────────────────────────────────────────────
+const MiniCanvasPreview = () => {
+  return (
+    <div className="relative h-[420px] w-full overflow-hidden rounded-3xl border border-white/10 bg-neutral-950 shadow-2xl">
+      {/* Grid background */}
+      <div 
+        className="absolute inset-0 opacity-[0.15]" 
+        style={{
+          backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+          backgroundSize: '24px 24px',
+        }}
+      />
+
+      {/* Project Name Top Left */}
+      <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 backdrop-blur-md shadow-lg">
+        <FiLayers className="h-4 w-4 text-blue-400" />
+        <span className="text-xs font-semibold text-white/80">Architecture_V2</span>
+      </div>
+
+      {/* Floating Nodes */}
+      
+      {/* Node 1: User / Frontend */}
+      <motion.div 
+        className="absolute left-8 top-28 z-10 flex flex-col items-center gap-2"
+        initial={{ y: 0 }}
+        animate={{ y: [-6, 6, -6] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-blue-500/30 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md">
+          <FiBox className="h-6 w-6 text-blue-400" />
+        </div>
+        <span className="text-[10px] font-medium text-white/70 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-sm">Frontend</span>
+      </motion.div>
+
+      {/* Node 2: API / Backend */}
+      <motion.div 
+        className="absolute left-[160px] top-[160px] z-10 flex flex-col items-center gap-2"
+        initial={{ y: 0 }}
+        animate={{ y: [6, -6, 6] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+      >
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/10 shadow-[0_0_20px_rgba(168,85,247,0.3)] backdrop-blur-md">
+          <FiCpu className="h-7 w-7 text-purple-400" />
+        </div>
+        <span className="text-[10px] font-medium text-white/70 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-sm">API Gateway</span>
+      </motion.div>
+
+      {/* Node 3: Database */}
+      <motion.div 
+        className="absolute right-12 top-[80px] z-10 flex flex-col items-center gap-2"
+        initial={{ y: 0 }}
+        animate={{ y: [-5, 5, -5] }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.3)] backdrop-blur-md">
+          <FiLayers className="h-6 w-6 text-emerald-400" />
+        </div>
+        <span className="text-[10px] font-medium text-white/70 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-sm">Database</span>
+      </motion.div>
+
+      {/* Node 4: AI Service */}
+      <motion.div 
+        className="absolute bottom-16 right-28 z-10 flex flex-col items-center gap-2"
+        initial={{ y: 0 }}
+        animate={{ y: [4, -4, 4] }}
+        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-pink-500/30 bg-pink-500/10 shadow-[0_0_20px_rgba(236,72,153,0.3)] backdrop-blur-md">
+           <div className="flex h-full w-full items-center justify-center">
+             <FiPenTool className="h-6 w-6 text-pink-400" />
+           </div>
+        </div>
+        <span className="text-[10px] font-medium text-white/70 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-sm">AI Analysis</span>
+      </motion.div>
+
+
+      {/* Flowing Lines (SVG) */}
+      <svg className="absolute inset-0 h-full w-full pointer-events-none z-0">
+        <defs>
+          <linearGradient id="line-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#a855f7" stopOpacity="0.8" />
+          </linearGradient>
+          <linearGradient id="line-grad-2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.8" />
+          </linearGradient>
+          <linearGradient id="line-grad-3" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.8" />
+          </linearGradient>
+          
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Connection 1: Frontend -> API Gateway */}
+        <path 
+          d="M 64,136 C 100,136 120,188 160,188" 
+          fill="none" 
+          stroke="url(#line-grad-1)" 
+          strokeWidth="2.5" 
+          strokeDasharray="6 6" 
+          className="opacity-70"
+        />
+        <circle r="4" fill="#60a5fa" filter="url(#glow)">
+          <animateMotion dur="2.5s" repeatCount="indefinite" path="M 64,136 C 100,136 120,188 160,188" />
+        </circle>
+
+        {/* Connection 2: API Gateway -> Database */}
+        <path 
+          d="M 216,188 C 250,188 280,104 310,104" 
+          fill="none" 
+          stroke="url(#line-grad-2)" 
+          strokeWidth="2.5" 
+          strokeDasharray="6 6" 
+          className="opacity-70"
+        />
+        <circle r="4" fill="#34d399" filter="url(#glow)">
+          <animateMotion dur="3s" repeatCount="indefinite" path="M 216,188 C 250,188 280,104 310,104" />
+        </circle>
+
+        {/* Connection 3: API Gateway -> AI Service */}
+        <path 
+          d="M 188,216 C 188,260 250,290 280,310" 
+          fill="none" 
+          stroke="url(#line-grad-3)" 
+          strokeWidth="2.5" 
+          strokeDasharray="6 6" 
+          className="opacity-70"
+        />
+        <circle r="4" fill="#f472b6" filter="url(#glow)">
+          <animateMotion dur="3.5s" repeatCount="indefinite" path="M 188,216 C 188,260 250,290 280,310" />
+        </circle>
+      </svg>
+      
+      {/* Overlay UI to make it look like an editor */}
+      <div className="absolute bottom-4 left-4 z-10 flex gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-lg hover:bg-white/20 transition-colors cursor-pointer">
+           <div className="h-3 w-3 rounded-sm border-2 border-white/70" />
+        </div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-lg hover:bg-white/20 transition-colors cursor-pointer">
+           <FiPenTool className="h-4 w-4 text-white/70" />
+        </div>
+      </div>
+      
+      {/* Zoom UI right bottom */}
+      <div className="absolute bottom-4 right-4 z-10 flex items-center gap-2 rounded-lg bg-white/10 px-2 py-1 backdrop-blur-md border border-white/20 shadow-lg">
+         <span className="text-[10px] font-bold text-white/80">100%</span>
+      </div>
+    </div>
+  );
+};
 
 
 // ─── FeatureCard ──────────────────────────────────────────────────────────────
@@ -211,7 +367,22 @@ const FeatureCard = ({ label, desc, icon: Icon, index }) => {
 const Hero = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentLine, setCurrentLine] = useState(0);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const { user } = useUser();
+
+  useEffect(() => {
+    // Check if the update modal has been shown
+    const updateSeen = localStorage.getItem("sketchon_update_v2_seen");
+    if (!updateSeen) {
+      const timer = setTimeout(() => setShowUpdateModal(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const closeUpdateModal = () => {
+    setShowUpdateModal(false);
+    localStorage.setItem("sketchon_update_v2_seen", "true");
+  };
 
   useEffect(() => {
     const id = setInterval(
@@ -325,48 +496,96 @@ const Hero = () => {
         {/* Mobile menu */}
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div
-              className="overflow-hidden lg:hidden"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-            >
-              <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 pb-4 sm:px-6">
-                {navLinks.map((link, i) => (
-                  <motion.div
-                    key={link.href}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                  >
-                    <Link
-                      to={link.href}
-                      className="block rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white/80 transition hover:border-white/30 hover:bg-white/10"
-                      onClick={() => setIsMenuOpen(false)}
+            <>
+              {/* Invisible backdrop to close on click outside */}
+              <motion.div
+                className="fixed inset-0 z-40 lg:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMenuOpen(false)}
+              />
+              
+              <motion.div
+                className="absolute right-4 top-20 z-50 flex w-[220px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-neutral-950/95 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl lg:hidden"
+                initial={{ opacity: 0, y: -10, scale: 0.95, transformOrigin: "top right" }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <div className="flex flex-col gap-1">
+                  {navLinks.map((link, i) => (
+                    <motion.div
+                      key={link.href}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
                     >
-                      {link.label}
-                    </Link>
-                  </motion.div>
-                ))}
+                      <Link
+                        to={link.href}
+                        className="block rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {link.label}
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <div className="my-3 h-[1px] w-full bg-white/10" />
+
                 <SignedIn>
-                  <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-                    <Link
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.15 }}
+                  >
+                    <StarBorder
+                      as={Link}
                       to="/dashboard"
-                      className="block rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
+                      color="#3b82f6"
+                      speed="4s"
+                      thickness={1.5}
+                      className="w-full rounded-xl"
+                      innerClassName="flex w-full items-center justify-center rounded-xl bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-neutral-900"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Dashboard
-                    </Link>
+                    </StarBorder>
                   </motion.div>
                 </SignedIn>
-              </div>
-            </motion.div>
+                
+                <SignedOut>
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.15 }}
+                  >
+                    <SignInButton mode="modal">
+                      <div className="w-full" onClick={() => setIsMenuOpen(false)}>
+                        <StarBorder
+                          color="#ffffff"
+                          speed="6s"
+                          thickness={1.5}
+                          className="w-full rounded-xl"
+                          innerClassName="flex w-full items-center justify-center rounded-xl bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-neutral-900"
+                        >
+                          Sign In
+                        </StarBorder>
+                      </div>
+                    </SignInButton>
+                  </motion.div>
+                </SignedOut>
+
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </header>
 
       {/* ── Hero Section ── */}
+      <div className="w-full overflow-hidden">
       <section className="mx-auto grid max-w-6xl gap-12 px-4 pb-20 pt-16 sm:px-6 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:pb-24 lg:pt-20">
 
         {/* Left column */}
@@ -525,87 +744,95 @@ const Hero = () => {
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <div className="absolute -inset-4 rounded-3xl bg-white/5 opacity-50 blur-xl" />
+          <div className="absolute -inset-4 rounded-3xl bg-blue-500/10 opacity-50 blur-3xl" />
           <div className="relative">
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-6 shadow-2xl backdrop-blur-xl">
-              {/* Panel header */}
-              <div className="mb-4 flex items-center justify-between text-sm text-white/60">
-                <span className="flex items-center gap-2">
-                  <FiLayers className="h-4 w-4 text-white/50" />
-                  Canvas preview
-                </span>
-                <span className="flex items-center gap-2">
-                  <motion.div
-                    className="h-2 w-2 rounded-full bg-white/60"
-                    style={{ boxShadow: "0 0 5px rgba(255,255,255,0.4)" }}
-                    animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                  AI analysis
-                </span>
+             <MiniCanvasPreview />
+          </div>
+        </motion.div>
+      </section>
+      </div>
+
+      {/* ── Update Modal ── */}
+      <AnimatePresence>
+        {showUpdateModal && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-neutral-950/60 p-4 backdrop-blur-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Background click */}
+            <div className="absolute inset-0" onClick={closeUpdateModal} />
+            
+            <motion.div
+              className="relative flex w-full max-w-lg flex-col gap-6 rounded-3xl border border-white/10 bg-neutral-900/90 p-8 shadow-2xl backdrop-blur-xl"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            >
+              {/* Close Button */}
+              <button 
+                onClick={closeUpdateModal}
+                className="absolute right-6 top-6 rounded-full p-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+
+              {/* Header */}
+              <div>
+                <motion.div
+                  className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-blue-400"
+                >
+                  <FiStar className="h-3 w-3" />
+                  What's New
+                </motion.div>
+                <h2 className="text-2xl font-bold text-white sm:text-3xl">Sketch On v2.0</h2>
+                <p className="mt-2 text-sm text-white/60">
+                  We've upgraded your whiteboard experience with powerful new features, smoother design, and better security.
+                </p>
               </div>
 
-              {/* Canvas items */}
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-neutral-900/50 p-4">
-                {canvasItems.map((item, index) => (
-                  <motion.div
-                    key={item.name}
-                    className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3 transition-all duration-300 hover:border-white/20 hover:bg-white/10"
+              {/* Updates List */}
+              <div className="flex flex-col gap-3">
+                {[
+                  { title: "Smart Shapes", desc: "New shapes integrated with AI-driven optimization options." },
+                  { title: "50+ Tech Icons", desc: "A massive new library of technology icons for your architectures." },
+                  { title: "Seamless Payments", desc: "Smooth and secure payment gateway integration for credits." },
+                  { title: "Enhanced Security", desc: "Email verification added to keep your projects and account safe." },
+                  { title: "Premium UI/UX", desc: "Enjoy a noticeably smoother, faster, and more premium interface." },
+                ].map((item, i) => (
+                  <motion.div 
+                    key={item.title}
+                    className="flex flex-col gap-1 border-l-2 border-white/20 pl-4 py-1 transition-colors hover:border-white/50"
                     initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 * index }}
-                    viewport={{ once: true }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + i * 0.1 }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-sm font-semibold text-white/80">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-white">{item.name}</p>
-                        <p className="text-xs text-white/60">{item.type}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-white/10">
-                        <motion.div
-                          className="h-full rounded-full bg-white/40"
-                          initial={{ width: "0%" }}
-                          whileInView={{ width: `${item.progress}%` }}
-                          transition={{ duration: 1.5, delay: 0.3 + 0.1 * index }}
-                          viewport={{ once: true }}
-                        />
-                      </div>
-                      <span className="min-w-[52px] text-right text-xs font-medium text-white/70">
-                        {item.status}
-                      </span>
-                    </div>
+                    <h3 className="text-sm font-semibold text-white/90">{item.title}</h3>
+                    <p className="text-xs text-white/50">{item.desc}</p>
                   </motion.div>
                 ))}
               </div>
 
-              {/* Bullets */}
-              <motion.div
-                className="mt-4 space-y-2"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
-                viewport={{ once: true }}
-              >
-                {[
-                  "Detects misalignment and inconsistent spacing automatically.",
-                  "Recommends hierarchy, labels, and smart grouping.",
-                  "Exports polished narratives without losing your intent.",
-                ].map((text) => (
-                  <div key={text} className="flex items-center gap-2 text-sm text-white/70">
-                    <div className="h-1 w-1 flex-shrink-0 rounded-full bg-white/40" />
-                    {text}
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
+              {/* CTA */}
+              <div className="mt-4 flex justify-center">
+                <StarBorder
+                  onClick={closeUpdateModal}
+                  color="#3b82f6"
+                  speed="4s"
+                  thickness={1.5}
+                  className="rounded-full shadow-lg"
+                  innerClassName="bg-white hover:bg-white/95 text-neutral-950 text-sm font-semibold px-10 py-3.5 rounded-full flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  Let's Go
+                  <FiArrowRight className="h-4 w-4" />
+                </StarBorder>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

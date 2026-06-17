@@ -193,7 +193,7 @@ const Dashboard = () => {
             to="/"
             className="text-sm text-white/60 hover:text-white transition-colors"
           >
-            ← Back to Home
+            Back
           </Link>
         </div>
       </header>
@@ -203,10 +203,10 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/5 pb-6">
           <div>
-            <h1 className="text-3xl font-semibold mb-2">
-               Start building , {user?.firstName || user?.username || "Designer"}! 👋
+            <h1 className="text-xl sm:text-2xl font-semibold mb-2">
+               Start building, {user?.firstName || user?.username || "Designer"}! 👋
             </h1>
-            <p className="text-white/60">
+            <p className="text-sm text-white/60">
               Continue working on your projects or start a new one.
             </p>
           </div>
