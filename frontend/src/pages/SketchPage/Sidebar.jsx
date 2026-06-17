@@ -153,6 +153,12 @@ const DesktopSidebar = React.forwardRef(
               className="flex flex-col items-center justify-center p-3.5 bg-neutral-850 hover:bg-neutral-800 border border-white/5 hover:border-purple-500/30 rounded-xl cursor-grab transition-all duration-200 active:cursor-grabbing relative group shadow-md"
               draggable
               onDragStart={(event) => onDragStart(event, symbol.type, symbol.arrowType)}
+              onClick={() => {
+                const event = new CustomEvent("addShapeToCanvas", {
+                  detail: { type: symbol.type, arrowType: symbol.arrowType }
+                });
+                window.dispatchEvent(event);
+              }}
             >
               <span className="text-2xl transition-transform duration-200 group-hover:scale-110 select-none">{symbol.icon}</span>
               {/* Tooltip */}
@@ -226,9 +232,18 @@ const MobileBottomBar = ({
               {symbols.map((symbol) => (
                 <div
                   key={symbol.id}
-                  className="flex flex-col items-center justify-center p-3.5 bg-neutral-850 border border-white/5 rounded-xl cursor-grab hover:bg-neutral-800 active:bg-neutral-700 transition-all text-center relative group"
+                  className="flex flex-col items-center justify-center p-3.5 bg-neutral-850 border border-white/5 rounded-xl cursor-pointer hover:bg-neutral-800 active:bg-neutral-700 transition-all text-center relative group"
                   draggable
                   onDragStart={(event) => onDragStart(event, symbol.type, symbol.arrowType)}
+                  onClick={() => {
+                    const event = new CustomEvent("addShapeToCanvas", {
+                      detail: { type: symbol.type, arrowType: symbol.arrowType }
+                    });
+                    window.dispatchEvent(event);
+                    if (window.innerWidth < 768) {
+                      setIsMobileExpanded(false);
+                    }
+                  }}
                 >
                   <span className="text-2xl">{symbol.icon}</span>
                   <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-neutral-950 border border-white/10 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">

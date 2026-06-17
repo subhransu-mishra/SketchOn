@@ -477,6 +477,59 @@ const CanvasFlow = ({ projectData, onDataChange, readOnly = false }) => {
     };
   }, [setNodes, onNodeLabelChange, onNodeResize, onFontSizeChange, onTextColorChange]);
 
+  // Listen for custom event to add shapes from click/tap
+  useEffect(() => {
+    const handleAddShapeToCanvas = (event) => {
+      const shapeData = event.detail;
+      if (!shapeData || !shapeData.type) return;
+
+      const { type, arrowType } = shapeData;
+
+      // Add shape at center of the visible viewport
+      const position = { x: 250, y: 150 };
+
+      const labelMap = {
+        rectangle: "Rectangle",
+        circle: "Circle",
+        diamond: "Diamond",
+        textNode: "Text",
+        arrowNode: "Arrow",
+      };
+
+      const defaults = DEFAULT_NODE_STYLES[type] || {};
+      const newNode = {
+        id: getId(),
+        type,
+        position,
+        draggable: true,
+        selectable: true,
+        style: {
+          ...(defaults.width ? { width: defaults.width } : {}),
+          ...(defaults.height ? { height: defaults.height } : {}),
+        },
+        data: {
+          label: labelMap[type] || type,
+          onLabelChange: onNodeLabelChange,
+          onColorChange: onNodeColorChange,
+          onResize: onNodeResize,
+          onFontSizeChange: onFontSizeChange,
+          onTextColorChange: onTextColorChange,
+          ...(defaults.color ? { color: defaults.color } : {}),
+          ...(defaults.width ? { width: defaults.width } : {}),
+          ...(defaults.height ? { height: defaults.height } : {}),
+          ...(arrowType ? { arrowType } : {}),
+        },
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+    };
+
+    window.addEventListener("addShapeToCanvas", handleAddShapeToCanvas);
+    return () => {
+      window.removeEventListener("addShapeToCanvas", handleAddShapeToCanvas);
+    };
+  }, [setNodes, onNodeLabelChange, onNodeColorChange, onNodeResize, onFontSizeChange, onTextColorChange]);
+
   return (
     <div className="flex-1 h-full" ref={reactFlowWrapper}>
       <ReactFlow
