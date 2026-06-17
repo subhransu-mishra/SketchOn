@@ -233,8 +233,6 @@ const MobileBottomBar = ({
                 <div
                   key={symbol.id}
                   className="flex flex-col items-center justify-center p-3.5 bg-neutral-850 border border-white/5 rounded-xl cursor-pointer hover:bg-neutral-800 active:bg-neutral-700 transition-all text-center relative group"
-                  draggable
-                  onDragStart={(event) => onDragStart(event, symbol.type, symbol.arrowType)}
                   onClick={() => {
                     const event = new CustomEvent("addShapeToCanvas", {
                       detail: { type: symbol.type, arrowType: symbol.arrowType }
